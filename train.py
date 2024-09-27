@@ -13,7 +13,12 @@ TRAIN_DIR = "data"
 class TrainSession:
     def __init__(self, args):
 
-        self.train_loader = DataLoader(TomatoLeafDataset(TRAIN_DIR + "/train.csv", TRAIN_DIR + "/train"), batch_size=1, shuffle=True, num_workers=0)
+        self.train_loader = DataLoader(
+            TomatoLeafDataset(TRAIN_DIR + "/train.csv", TRAIN_DIR + "/train"), 
+            batch_size=1, 
+            shuffle=True, 
+            num_workers=args.num_workers
+        )
 
         # Load the necessary components
         self.loss_fn = smp.losses.JaccardLoss(smp.losses.BINARY_MODE, from_logits=True, log_loss=False)
@@ -125,7 +130,7 @@ class TrainSession:
                 
             self.writer.flush()
             
-            self.save_model()
+        self.save_model()
 
     def save_model(self):
         model_path = f"model_checkpoint/model_{self.timestamp}.pt"
@@ -140,6 +145,7 @@ if __name__ == "__main__":
     parser.add_argument('-e', '--epoch', default=10, type=int)
     parser.add_argument('-t', '--threshold', default=0.7, type=float)
     parser.add_argument('-d', '--device', default="cpu", type=str)
+    parser.add_argument('-n', '--num-workers', default=os.cpu_count() // 2, type=int)
 
     args = parser.parse_args()
 
