@@ -52,6 +52,7 @@ def rl_decode(enc, shape=(IMAGE_HEIGHT, IMAGE_WIDTH)):
 
 class TomatoLeafDataset(Dataset):
     def __init__(self, csv_file: str, image_dir: str):
+        self.csv_file = csv_file
         self.encodings = pd.read_csv(csv_file)
         self.image_dir = image_dir
 
@@ -66,7 +67,12 @@ class TomatoLeafDataset(Dataset):
             self.encodings.iloc[idx, 0] + ".jpg"
         )
 
-        mask = rl_decode(self.encodings.iloc[idx, 1])
+        try:
+            mask = rl_decode(self.encodings.iloc[idx, 1])
+
+        except:
+            mask =  None
+
         img = np.array(Image.open(img_name))
 
         # Image dim is H, W, C
@@ -74,7 +80,7 @@ class TomatoLeafDataset(Dataset):
 
         try:
             assert sample['image'].shape[1] % 32 == 0 and sample['image'].shape[2] % 32 == 0, "Image size must be divisible by 32"
-            sample['mask'] = forward_transform_mask(image=mask)['image']
+            sample['mask'] = forward_transform_mask(image=mask)['image'] if mask is not None else None
 
             return sample
 
