@@ -31,16 +31,12 @@ class TrainSession:
 
         self.scheduler, self.optimizer = self.configure_optimizer(self.T_max)
 
-        # Create a dictionary to hold the statistics
-        self.metrics_dict = {
-            "tp": [],
-            "fp": [],
-            "fn": [],
-            "tn": []
-        }
-
         # Cache arguments
         self.threshold = args.threshold
+        self.grad_accumulation = args.grad_accumulation
+        self.grad_acc_steps = args.grad_acc_steps
+
+        self.device = args.device
 
         self.timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         if not os.path.exists("log/tb"):
@@ -61,6 +57,9 @@ class TrainSession:
         for i, data in enumerate(self.train_loader):
             img, mask = data['image'], data['mask']
 
+            # Attach the data to the device
+            img, mask = img.to(self.device), mask.to(self.device)
+
             # Empty out the gradients
             self.optimizer.zero_grad()
 
@@ -73,13 +72,10 @@ class TrainSession:
             # Backprop
             loss.backward()
 
-            # Adjust the gradients and update the learning rate
-            self.optimizer.step()
-            self.scheduler.step()
-
-            tp, fp, fn, tn = smp.metrics.get_stats(
-                (logits_pred_mask.sigmoid() > self.threshold).long(), mask.long(), mode="binary"
-            )
+            if self.grad_accumulation and ((i + 1)% self.grad_acc_steps == 0 or (i + 1)==len(self.train_loader)):
+                # Adjust the gradients and update the learning rate
+                self.optimizer.step()
+                self.scheduler.step()
 
             running_loss += loss
 
@@ -87,27 +83,13 @@ class TrainSession:
             print(f"    Image {i} | Loss: {loss}")
             self.writer.add_scalar('Loss/Train', loss, epoch_index * (i + 1))
 
-            # Append the running stats
-            self.metrics_dict['tp'].append(tp)
-            self.metrics_dict['fp'].append(fp)
-            self.metrics_dict['fn'].append(fn)
-            self.metrics_dict['tn'].append(tn)
-        
-        per_image_iou = smp.metrics.iou_score(
-            torch.cat([x for x in self.metrics_dict['tp']]),
-            torch.cat([x for x in self.metrics_dict['fp']]),
-            torch.cat([x for x in self.metrics_dict['fn']]),
-            torch.cat([x for x in self.metrics_dict['tn']]),
-            reduction="micro-imagewise"
-        )
+            del loss, logits_pred_mask, mask
+            if self.device == torch.mps:
+                torch.mps.empty_cache()
 
         avg_loss = running_loss/(i + 1)
 
-        # Clear cache
-        for key in self.metrics_dict:
-            self.metrics_dict[key].clear()
-
-        return avg_loss, per_image_iou
+        return avg_loss
 
     def train(self, num_epochs):
 
@@ -116,23 +98,20 @@ class TrainSession:
             self.model.train(True)
 
             # Go through the entire dataset once
-            avg_loss, per_image_iou = self.train_one_epoch(epoch)
+            avg_loss = self.train_one_epoch(epoch)
 
             # Log the statistics
-            print(f"Train Loss/IOU: {avg_loss}/{per_image_iou}")
-            self.writer.add_scalars("Average Training Loss/IOU",
-                {
-                    "Loss": avg_loss,
-                    "IOU": per_image_iou
-                },
-                epoch
-            )
+            print(f"Train Loss: {avg_loss}")
+            self.writer.add_scalar("Average Training Loss", avg_loss, epoch)
                 
             self.writer.flush()
             
         self.save_model()
 
     def save_model(self):
+        if not os.path.exists("model_checkpoint/"):
+            os.makedirs("model_checkpoint/")
+            
         model_path = f"model_checkpoint/model_{self.timestamp}.pt"
         torch.save(self.model.state_dict(), model_path)
 
@@ -146,6 +125,8 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--threshold', default=0.7, type=float)
     parser.add_argument('-d', '--device', default="cpu", type=str)
     parser.add_argument('-n', '--num-workers', default=os.cpu_count() // 2, type=int)
+    parser.add_argument('-g', '--grad-accumulation', default=True, type=bool)
+    parser.add_argument('-s', '--grad-acc-steps', default=4, type=int)
 
     args = parser.parse_args()
 

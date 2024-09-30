@@ -4,7 +4,7 @@ import segmentation_models_pytorch as smp
 class TomatoLeafModel(torch.nn.Module):
     def __init__(
             self,
-            encoder_name: str="resnet34",
+            encoder_name: str="resnet18",
             encoder_weights: str="imagenet",
             in_channels: int=3,
             out_classes: int=1,
