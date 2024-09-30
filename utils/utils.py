@@ -1,4 +1,7 @@
 import matplotlib.pyplot as plt
+from torchvision.transforms.v2 import Resize, InterpolationMode
+from utils.data_loading import IMAGE_HEIGHT, IMAGE_WIDTH
+import cv2
 import torch
 import os
 
@@ -16,3 +19,34 @@ def display_image_and_mask(image, mask, imgname, figsize=(10, 6)):
         os.mkdir("test_img_results")
 
     plt.savefig(f"test_img_results/{imgname}.jpg")
+
+resize_mask = Resize((IMAGE_HEIGHT, IMAGE_WIDTH), InterpolationMode.NEAREST_EXACT)
+
+def run_length_encode(mask):
+    enc = []
+    cache_val = mask[0]
+    val_counter = 0
+
+    for i in range(len(mask)):
+        if cache_val != mask[i]:
+            enc.append(str(val_counter))
+            enc.append(str(cache_val))
+            val_counter = 0
+
+        cache_val = mask[i]
+        val_counter += 1
+
+        if i == (len(mask) - 1):
+            enc.append(str(val_counter))
+            enc.append(str(cache_val))
+
+    return " ".join(enc)
+
+def encode_mask(mask: torch.Tensor, threshold: float):
+    # Resize the mask first
+    mask = resize_mask(mask)
+
+    # Apply transformations
+    mask = (mask.sigmoid() > threshold).long().flatten().tolist()
+
+    return run_length_encode(mask)

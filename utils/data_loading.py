@@ -71,7 +71,7 @@ class TomatoLeafDataset(Dataset):
             mask = rl_decode(self.encodings.iloc[idx, 1])
 
         except:
-            mask =  None
+            mask = None
 
         img = np.array(Image.open(img_name))
 
@@ -80,7 +80,7 @@ class TomatoLeafDataset(Dataset):
 
         try:
             assert sample['image'].shape[1] % 32 == 0 and sample['image'].shape[2] % 32 == 0, "Image size must be divisible by 32"
-            sample['mask'] = forward_transform_mask(image=mask)['image'] if mask is not None else None
+            sample['mask'] = forward_transform_mask(image=mask)['image'] if mask is not None else [0]
 
             return sample
 
