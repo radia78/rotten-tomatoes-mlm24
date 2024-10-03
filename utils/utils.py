@@ -1,12 +1,13 @@
 import matplotlib.pyplot as plt
 from torchvision.transforms.v2 import Resize, InterpolationMode
-from utils.data_loading import IMAGE_HEIGHT, IMAGE_WIDTH
+from utils.data_loading import IMAGE_HEIGHT, IMAGE_WIDTH, rl_decode
 import cv2
 import torch
 import os
 import pandas as pd
 from PIL import Image
 import numpy as np
+
 
 def display_image_and_mask(image, mask, imgname, save_dir='test_img_results', figsize=(10, 6)):
     plt.figure(figsize=figsize)
@@ -53,15 +54,6 @@ def encode_mask(mask: torch.Tensor, threshold: float):
     mask = (mask.sigmoid() > threshold).long().flatten().tolist()
 
     return run_length_encode(mask)
-
-def rl_decode(enc, shape=(1400, 875)):
-    parts = [int(s) for s in enc.split(' ')]
-    dec = list()
-    for i in range(0, len(parts), 2):
-        cnt = parts[i]
-        val = parts[i+1]
-        dec += cnt * [val]
-    return np.array(dec, dtype=np.uint8).reshape(shape)
 
 def load_and_decode(train_csv, img_dir):
     train_data = pd.read_csv(train_csv)

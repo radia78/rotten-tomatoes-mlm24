@@ -32,7 +32,7 @@ forward_transform_image = Compose([
         ToTensorV2()
     ])
 
-forward_transform_mask =Compose([
+forward_transform_mask = Compose([
         Resize(
             transform_image_size(IMAGE_HEIGHT, SCALE), 
             transform_image_size(IMAGE_WIDTH, SCALE),
