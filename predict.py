@@ -12,7 +12,7 @@ def main():
     parser.add_argument('-i', '--image', action='store_true', help="Generate and save prediction images")
     args = parser.parse_args()
 
-    TESTDIR = "data/test"
+    TESTDIR = "data/"
     model_ckpt_file = os.listdir("model_checkpoint")[-1]
 
     # Load the test dataset and model
@@ -27,6 +27,7 @@ def main():
         img = sample['image']
 
         pred_mask = model(img)
+        print(pred_mask.shape)
         test_df['annotation'] = encode_mask(pred_mask.detach(), 0.9)
 
     if not os.path.exists("predictions"):

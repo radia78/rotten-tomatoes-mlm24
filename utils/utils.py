@@ -55,6 +55,13 @@ def encode_mask(mask: torch.Tensor, threshold: float):
 
     return run_length_encode(mask)
 
+def encode_mask_img(mask: Image.Image):
+    mask = np.array(mask)
+    # print(mask.shape)
+    mask = mask.flatten().tolist()
+
+    return run_length_encode(mask)
+
 def load_and_decode(train_csv, img_dir):
     train_data = pd.read_csv(train_csv)
     images, masks = [], []
@@ -66,4 +73,12 @@ def load_and_decode(train_csv, img_dir):
         masks.append(mask)
     return images, masks
 
-images, masks = load_and_decode('data/train.csv', 'data/train')
+def load_images(train_csv, img_dir, to_np_array=True):
+    train_data = pd.read_csv(train_csv)
+    images = []
+    for idx, row in train_data.iterrows():
+        id = row['id']
+        img_path = f"{img_dir}/{id}.jpg"
+        img = Image.open(img_path)
+        images.append((id, np.array(img) if to_np_array else img))
+    return images
