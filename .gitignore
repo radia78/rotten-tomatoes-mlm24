@@ -1,4 +1,5 @@
 predictions/images
 data/train/vertical_flipped
-info.ipynb
+utils/__pycache__/
+unet/__pycache__/
 
