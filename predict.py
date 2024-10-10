@@ -6,6 +6,7 @@ from utils.utils import encode_mask, load_and_decode, display_image_and_mask
 from utils.data_loading import TomatoLeafDataset
 from torch.utils.data import DataLoader
 from unet.model import TomatoLeafModel
+from matplotlib import pyplot as plt
 
 def main():
     parser = argparse.ArgumentParser(description="Predict the tomato leaf mask")
@@ -25,9 +26,11 @@ def main():
     # Create predictions for each of image and append it to the csv file
     for sample in test_loader:
         img = sample['image']
+        # print(img.shape)
+        # plt.imshow(img.squeeze(0).permute(1, 2, 0))
+        # plt.show()
 
         pred_mask = model(img)
-        print(pred_mask.shape)
         test_df['annotation'] = encode_mask(pred_mask.detach(), 0.9)
 
     if not os.path.exists("predictions"):
