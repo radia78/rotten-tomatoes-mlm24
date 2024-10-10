@@ -12,15 +12,15 @@ def main():
     parser.add_argument('-i', '--image', action='store_true', help="Generate and save prediction images")
     args = parser.parse_args()
 
-    DIR = "data/"
+    TESTDIR = "data/test"
     model_ckpt_file = os.listdir("model_checkpoint")[-1]
 
     # Load the test dataset and model
-    test_loader = DataLoader(TomatoLeafDataset(DIR + "test.csv", DIR + "test"), batch_size=1)
+    test_loader = DataLoader(TomatoLeafDataset(TESTDIR + "test.csv", TESTDIR + "test"), batch_size=1)
     model = TomatoLeafModel()
     weights = torch.load("model_checkpoint/" + model_ckpt_file, weights_only=True)
     model.load_state_dict(weights)
-    test_df = pd.read_csv(DIR + "test.csv")
+    test_df = pd.read_csv(TESTDIR + "test.csv")
 
     # Create predictions for each of image and append it to the csv file
     for sample in test_loader:
@@ -35,7 +35,7 @@ def main():
     test_df.to_csv("predictions/sample_submission.csv")
 
     if args.image:
-        images, masks = load_and_decode("predictions/sample_submission.csv", DIR + "test")
+        images, masks = load_and_decode("predictions/sample_submission.csv", TESTDIR + "test")
         for i in range(len(images)):
             name = test_df.iloc[i]['id']
             display_image_and_mask(images[i], masks[i], name, "predictions/images")
