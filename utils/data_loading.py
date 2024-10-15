@@ -51,10 +51,11 @@ def rl_decode(enc, shape=(IMAGE_HEIGHT, IMAGE_WIDTH)):
     return np.array(dec, dtype=np.uint8).reshape(shape)
 
 class TomatoLeafDataset(Dataset):
-    def __init__(self, csv_file: str, image_dir: str):
+    def __init__(self, csv_file: str, image_dir: str, transform=None):
         self.csv_file = csv_file
         self.encodings = pd.read_csv(csv_file)
         self.image_dir = image_dir
+        self.transform = transform
 
     def __len__(self):
         return len(self.encodings)

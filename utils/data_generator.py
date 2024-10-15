@@ -4,9 +4,19 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
 import os
-from utils.utils import rl_decode, encode_mask_img, load_images
-import argparse
+from utils import rl_decode, encode_mask_img, load_images
+from albumentations import (Compose, 
+                            HorizontalFlip, 
+                            RandomRotate90, 
+                            GridDropout, 
+                            ShiftScaleRotate)
 
+augmentation_transforms = Compose([
+    HorizontalFlip(p=0.5),
+    RandomRotate90(p=0.5),
+    GridDropout(ratio=0.5, p=0.5),
+    ShiftScaleRotate(p=0.5)
+])
 
 def image_show(path, transform=None, show=True):
     img = Image.open(path)
@@ -35,6 +45,9 @@ def mask_transform(csv_path, dest_path, transform=None, output_name="train.csv")
     mask_encoded.to_csv(dest_path)
 
 def image_transform(source_path, dest_path, transform=None):
+    if not os.path.exists(dest_path):
+        os.makedirs(dest_path)
+     
     train_csv_path = os.path.join(source_path, "train.csv")
     images = load_images(train_csv_path, source_path, to_np_array=False)
     for image_id, image in images:
@@ -46,13 +59,14 @@ def image_transform(source_path, dest_path, transform=None):
         image.save(dest_path + image_id + ".jpg")
 
 def main():
-    train_path = "data/train/"
+    train_path = "../data/train/"
     mask_csv_path = os.path.join(train_path, "original/train.csv")
     image_path = os.path.join(train_path, "original/")
 
-    dest_dir = os.path.join(train_path, "vertical_flipped/")       
+    name = "composed_test"
+    dest_dir = os.path.join(train_path, f"{name}/")       
     
-    transform = transforms.RandomVerticalFlip(p=1) # Why Random?
+    transform = augmentation_transforms ## TODO 
 
     mask_transform(mask_csv_path, dest_dir, transform=transform)
     image_transform(image_path, dest_dir, transform=transform)
