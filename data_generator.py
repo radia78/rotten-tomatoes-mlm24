@@ -25,7 +25,7 @@ def mask_transform(csv_path, dest_path, transform=None, output_name="train.csv")
         mask = Image.fromarray(mask)
         if transform:
             mask = transform(mask)
-        mask_encoded['annotation'] = encode_mask_img(mask)
+        row['annotation'] = encode_mask_img(mask)
     
     if not os.path.exists(dest_path):
         os.makedirs(dest_path)

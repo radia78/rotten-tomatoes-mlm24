@@ -26,9 +26,6 @@ def main():
     # Create predictions for each of image and append it to the csv file
     for sample in test_loader:
         img = sample['image']
-        # print(img.shape)
-        # plt.imshow(img.squeeze(0).permute(1, 2, 0))
-        # plt.show()
 
         pred_mask = model(img)
         test_df['annotation'] = encode_mask(pred_mask.detach(), 0.9)
