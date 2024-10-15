@@ -5,6 +5,7 @@ from torch.optim import lr_scheduler
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
 from argparse import ArgumentParser
+import pickle
 import os
 
 # DIRS
@@ -25,6 +26,8 @@ class TrainSession:
 
         # Load the model
         self.model = TomatoLeafModel()
+        weights = torch.load("model_checkpoint/model_20240929_005201.pt")
+        self.model.load_state_dict(weights)
         self.model.to(args.device)
 
         self.T_max = args.epoch * len(self.train_loader)
@@ -35,6 +38,7 @@ class TrainSession:
         self.threshold = args.threshold
         self.grad_accumulation = args.grad_accumulation
         self.grad_acc_steps = args.grad_acc_steps
+        self.save_grad = args.save_grad
 
         self.device = args.device
 
@@ -49,6 +53,18 @@ class TrainSession:
         scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=T_max, eta_min=eta_min)
 
         return scheduler, optimizer
+
+    def collect_gradients(self, img_idx):
+        if not os.path.exists("grads"):
+            os.makedirs("grads")
+            
+        grad_dict = {}
+        for name, param in (self.model.named_parameters()):
+            if param.requires_grad and len(param.shape) > 1:
+                grad_dict[f"{name}"] = param.grad
+
+        with open(f'grads/grad_{img_idx}.pkl', 'wb') as file:
+            pickle.dump(grad_dict, file)
     
     def train_one_epoch(self, epoch_index):
         print(f"EPOCH {epoch_index}:")
@@ -71,6 +87,9 @@ class TrainSession:
 
             # Backprop
             loss.backward()
+
+            if self.save_grad:
+                self.collect_gradients(i)
 
             if self.grad_accumulation and ((i + 1)% self.grad_acc_steps == 0 or (i + 1)==len(self.train_loader)):
                 # Adjust the gradients and update the learning rate
@@ -125,8 +144,9 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--threshold', default=0.7, type=float)
     parser.add_argument('-d', '--device', default="cpu", type=str)
     parser.add_argument('-n', '--num-workers', default=os.cpu_count() // 2, type=int)
-    parser.add_argument('-g', '--grad-accumulation', default=True, type=bool)
+    parser.add_argument('-g', '--grad-accumulation', default=False, type=bool)
     parser.add_argument('-s', '--grad-acc-steps', default=4, type=int)
+    parser.add_argument('-sg', '--save-grad', default=False, type=bool)
 
     args = parser.parse_args()
 
