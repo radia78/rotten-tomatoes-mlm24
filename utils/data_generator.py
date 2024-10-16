@@ -16,46 +16,6 @@ augmentation_transforms = Compose([
     ShiftScaleRotate(p=0.5, shift_limit=0.0625, scale_limit=0.1, rotate_limit=45)
 ], additional_targets={"mask": "mask"})
 
-def image_show(path, transform=None, show=True):
-    img = Image.open(path)
-    if transform:
-        img = transform(img)
-    if show:
-        plt.imshow(img)
-        plt.show()
-    return img
-
-def mask_transform(csv_path, dest_path, transform=None, output_name="train.csv"):
-    mask_encoded = pd.read_csv(csv_path)
-    
-    for _, row in mask_encoded.iterrows():
-        mask = rl_decode(row['annotation'])
-        mask = Image.fromarray(mask)
-        if transform:
-            mask = transform(mask)
-        row['annotation'] = encode_mask_img(mask)
-    
-    if not os.path.exists(dest_path):
-        os.makedirs(dest_path)
-
-    dest_path = os.path.join(dest_path, output_name)
-
-    mask_encoded.to_csv(dest_path)
-
-def image_transform(source_path, dest_path, transform=None):
-    if not os.path.exists(dest_path):
-        os.makedirs(dest_path)
-     
-    train_csv_path = os.path.join(source_path, "train.csv")
-    images = load_images(train_csv_path, source_path, to_np_array=False)
-    for image_id, image in images:
-        if transform:
-            image = transform(image)
-            # print(f"Hi from image {image_id}")
-            # plt.imshow(image)
-            # plt.show()
-        image.save(dest_path + image_id + ".jpg")
-
 def data_transform(source_path, mask_csv_path, dest_path, transform=None):
     if not os.path.exists(dest_path):
         os.makedirs(dest_path)
