@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from torchvision.transforms.v2 import Resize, InterpolationMode
-from utils.data_loading import IMAGE_HEIGHT, IMAGE_WIDTH, rl_decode
+from data_loading import IMAGE_HEIGHT, IMAGE_WIDTH, rl_decode
 import cv2
 import torch
 import os
