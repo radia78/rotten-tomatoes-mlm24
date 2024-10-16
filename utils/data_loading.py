@@ -6,6 +6,7 @@ import numpy as np
 import cv2
 from PIL import Image
 from torch.utils.data import Dataset
+from utils.data_generator import augmentation_transforms
 from albumentations import (
     Resize,
     Compose,
@@ -75,6 +76,12 @@ class TomatoLeafDataset(Dataset):
             mask = None
 
         img = np.array(Image.open(img_name))
+
+        if self.transform:
+            augmented = self.transform(image=img, mask=mask)
+            img = augmented['image']
+            mask = augmented['mask']
+        
 
         # Image dim is H, W, C
         sample = forward_transform_image(image=img)
