@@ -1,6 +1,6 @@
-from unet.model import *
-from utils.data_loading import *
-from utils.utils import *
+from model import *
+from ..utils.data_loading import *
+from ..utils.utils import *
 
 csv_path = os.path.join("data", "train.csv")
 img_dir = os.path.join("data", "train")
