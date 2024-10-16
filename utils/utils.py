@@ -1,11 +1,15 @@
 import matplotlib.pyplot as plt
 from torchvision.transforms.v2 import Resize, InterpolationMode
-from utils.data_loading import IMAGE_HEIGHT, IMAGE_WIDTH
+from data_loading import IMAGE_HEIGHT, IMAGE_WIDTH, rl_decode
 import cv2
 import torch
 import os
+import pandas as pd
+from PIL import Image
+import numpy as np
 
-def display_image_and_mask(image, mask, imgname, figsize=(10, 6)):
+
+def display_image_and_mask(image, mask, imgname, save_dir='test_img_results', figsize=(10, 6)):
     plt.figure(figsize=figsize)
     plt.subplot(1, 2, 1)
     plt.imshow(image)
@@ -15,10 +19,10 @@ def display_image_and_mask(image, mask, imgname, figsize=(10, 6)):
     plt.imshow(mask)
     plt.title('Mask')
 
-    if not os.path.exists("test_img_results"):
-        os.mkdir("test_img_results")
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
 
-    plt.savefig(f"test_img_results/{imgname}.jpg")
+    plt.savefig(f"{save_dir}/{imgname}.jpg")
 
 resize_mask = Resize((IMAGE_HEIGHT, IMAGE_WIDTH), InterpolationMode.NEAREST_EXACT)
 
@@ -50,3 +54,31 @@ def encode_mask(mask: torch.Tensor, threshold: float):
     mask = (mask.sigmoid() > threshold).long().flatten().tolist()
 
     return run_length_encode(mask)
+
+def encode_mask_img(mask: Image.Image):
+    mask = np.array(mask)
+    # print(mask.shape)
+    mask = mask.flatten().tolist()
+
+    return run_length_encode(mask)
+
+def load_and_decode(train_csv, img_dir):
+    train_data = pd.read_csv(train_csv)
+    images, masks = [], []
+    for idx, row in train_data.iterrows():
+        img_path = f"{img_dir}/{row['id']}.jpg"
+        img = Image.open(img_path)
+        mask = rl_decode(row['annotation'])
+        images.append(np.array(img))
+        masks.append(mask)
+    return images, masks
+
+def load_images(train_csv, img_dir, to_np_array=True):
+    train_data = pd.read_csv(train_csv)
+    images = []
+    for idx, row in train_data.iterrows():
+        id = row['id']
+        img_path = f"{img_dir}/{id}.jpg"
+        img = Image.open(img_path)
+        images.append((id, np.array(img) if to_np_array else img))
+    return images

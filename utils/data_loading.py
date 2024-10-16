@@ -6,6 +6,7 @@ import numpy as np
 import cv2
 from PIL import Image
 from torch.utils.data import Dataset
+from utils.data_generator import augmentation_transforms
 from albumentations import (
     Resize,
     Compose,
@@ -32,7 +33,7 @@ forward_transform_image = Compose([
         ToTensorV2()
     ])
 
-forward_transform_mask =Compose([
+forward_transform_mask = Compose([
         Resize(
             transform_image_size(IMAGE_HEIGHT, SCALE), 
             transform_image_size(IMAGE_WIDTH, SCALE),
@@ -51,10 +52,11 @@ def rl_decode(enc, shape=(IMAGE_HEIGHT, IMAGE_WIDTH)):
     return np.array(dec, dtype=np.uint8).reshape(shape)
 
 class TomatoLeafDataset(Dataset):
-    def __init__(self, csv_file: str, image_dir: str):
+    def __init__(self, csv_file: str, image_dir: str, transform=None):
         self.csv_file = csv_file
         self.encodings = pd.read_csv(csv_file)
         self.image_dir = image_dir
+        self.transform = transform
 
     def __len__(self):
         return len(self.encodings)
@@ -74,6 +76,12 @@ class TomatoLeafDataset(Dataset):
             mask = None
 
         img = np.array(Image.open(img_name))
+
+        if self.transform:
+            augmented = self.transform(image=img, mask=mask)
+            img = augmented['image']
+            mask = augmented['mask']
+        
 
         # Image dim is H, W, C
         sample = forward_transform_image(image=img)

@@ -6,3 +6,4 @@ pytest
 matplotlib
 tensorboard
 kaggle
+torchsummary
