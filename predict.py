@@ -15,6 +15,7 @@ def main():
 
     TESTDIR = "data/"
     model_ckpt_file = os.listdir("model_checkpoint")[-1]
+    print(f"Using model checkpoint: {model_ckpt_file}")
 
     # Load the test dataset and model
     test_loader = DataLoader(TomatoLeafDataset(TESTDIR + "test.csv", TESTDIR + "test"), batch_size=1)

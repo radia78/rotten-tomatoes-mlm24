@@ -6,7 +6,6 @@ import numpy as np
 import cv2
 from PIL import Image
 from torch.utils.data import Dataset
-from utils.data_generator import augmentation_transforms
 from albumentations import (
     Resize,
     Compose,

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
 import os
-from utils import rl_decode, encode_mask_img, load_images
+from utils.utils import rl_decode, encode_mask_img, load_images
 from albumentations import (Compose, 
                             HorizontalFlip,
                             GridDropout, 

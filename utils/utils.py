@@ -1,12 +1,22 @@
 import matplotlib.pyplot as plt
 from torchvision.transforms.v2 import Resize, InterpolationMode
-from data_loading import IMAGE_HEIGHT, IMAGE_WIDTH, rl_decode
+from utils.data_loading import IMAGE_HEIGHT, IMAGE_WIDTH, rl_decode
 import cv2
 import torch
 import os
 import pandas as pd
 from PIL import Image
 import numpy as np
+from albumentations import (Compose, 
+                            HorizontalFlip,
+                            GridDropout, 
+                            ShiftScaleRotate)
+
+augmentation_transforms = Compose([
+    HorizontalFlip(p=0.5),
+    GridDropout(p=0.5),
+    ShiftScaleRotate(p=0.5, shift_limit=0.0625, scale_limit=0.1, rotate_limit=45)
+], additional_targets={"mask": "mask"})
 
 
 def display_image_and_mask(image, mask, imgname, save_dir='test_img_results', figsize=(10, 6)):

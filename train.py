@@ -3,18 +3,20 @@ from utils.data_loading import TomatoLeafDataset
 from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 from torch.utils.tensorboard import SummaryWriter
+from utils.utils import augmentation_transforms
 from datetime import datetime
 from argparse import ArgumentParser
 import os
 
+
 # DIRS
-TRAIN_DIR = "data"
+TRAIN_DIR = "data/train/original"
 
 class TrainSession:
     def __init__(self, args):
 
         self.train_loader = DataLoader(
-            TomatoLeafDataset(TRAIN_DIR + "/train.csv", TRAIN_DIR + "/train"), 
+            TomatoLeafDataset(TRAIN_DIR + "/train.csv", TRAIN_DIR, transform=augmentation_transforms), 
             batch_size=1, 
             shuffle=True, 
             num_workers=args.num_workers
@@ -121,7 +123,7 @@ if __name__ == "__main__":
         description="Trains a basic U-Net on the tomato leaf data"
     )
 
-    parser.add_argument('-e', '--epoch', default=10, type=int)
+    parser.add_argument('-e', '--epoch', default=100, type=int)
     parser.add_argument('-t', '--threshold', default=0.7, type=float)
     parser.add_argument('-d', '--device', default="cpu", type=str)
     parser.add_argument('-n', '--num-workers', default=os.cpu_count() // 2, type=int)
