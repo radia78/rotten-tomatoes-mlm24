@@ -6,11 +6,13 @@ import numpy as np
 import cv2
 from PIL import Image
 from torch.utils.data import Dataset
-from utils.data_generator import augmentation_transforms
 from albumentations import (
     Resize,
     Compose,
-    Normalize
+    Normalize,
+    CoarseDropout,
+    Affine,
+    GaussNoise,
 )
 from albumentations.pytorch import ToTensorV2
 
@@ -29,8 +31,7 @@ forward_transform_image = Compose([
             transform_image_size(IMAGE_WIDTH, SCALE),
             interpolation=cv2.INTER_CUBIC
         ),
-        Normalize(),
-        ToTensorV2()
+        Normalize()
     ])
 
 forward_transform_mask = Compose([
@@ -38,9 +39,22 @@ forward_transform_mask = Compose([
             transform_image_size(IMAGE_HEIGHT, SCALE), 
             transform_image_size(IMAGE_WIDTH, SCALE),
             interpolation=cv2.INTER_NEAREST_EXACT
-        ),
-        ToTensorV2()
+        )
     ])
+
+corruption_transforms = Compose([
+    GaussNoise(p=0.7, var_limit=(1, 5)),
+    CoarseDropout(p=0.7, num_holes_range=(5000, 10000))
+])
+
+augmentation_transforms = Compose([
+    Affine(rotate=(-360, 360), translate_percent=0.25, p=0.7)
+])
+
+transforms_dict = {
+    "augmentation_transforms": augmentation_transforms,
+    "corruption_transforms": corruption_transforms
+}
 
 def rl_decode(enc, shape=(IMAGE_HEIGHT, IMAGE_WIDTH)):
     parts = [int(s) for s in enc.split(' ')]
@@ -52,11 +66,13 @@ def rl_decode(enc, shape=(IMAGE_HEIGHT, IMAGE_WIDTH)):
     return np.array(dec, dtype=np.uint8).reshape(shape)
 
 class TomatoLeafDataset(Dataset):
-    def __init__(self, csv_file: str, image_dir: str, transform=None):
-        self.csv_file = csv_file
-        self.encodings = pd.read_csv(csv_file)
-        self.image_dir = image_dir
-        self.transform = transform
+    def __init__(self, root: str, split: str="train", transforms=None):
+        # Create the directories and open the csv-files
+        self.csv_file = f"{root}/{split}.csv"
+        self.encodings = pd.read_csv(self.csv_file)
+        self.image_dir = f"{root}/{split}"
+        self.transforms = transforms
+        self.to_tensor = ToTensorV2()
 
     def __len__(self):
         return len(self.encodings)
@@ -64,35 +80,39 @@ class TomatoLeafDataset(Dataset):
     def __getitem__(self, idx):
         idx = idx.tolist() if torch.is_tensor(idx) else idx
 
+        # The find the image name
         img_name = os.path.join(
             self.image_dir,
             self.encodings.iloc[idx, 0] + ".jpg"
         )
 
+        # Try to decode the mask if it exists else set it to 'None'
         try:
             mask = rl_decode(self.encodings.iloc[idx, 1])
-
         except:
             mask = None
-
+        
+        # Convert the image into an array
         img = np.array(Image.open(img_name))
 
-        if self.transform:
-            augmented = self.transform(image=img, mask=mask)
-            img = augmented['image']
-            mask = augmented['mask']
-        
+        # Apply preprocess transformation
+        img = forward_transform_image(image=img)["image"]
+        mask = forward_transform_mask(image=mask)["image"] if mask is not None else None
 
-        # Image dim is H, W, C
-        sample = forward_transform_image(image=img)
+        # Apply the transformation
+        if self.transforms is not None:
+            augmented = self.transforms["augmentation_transforms"](image=img, mask=mask)
+            img = self.transforms["corruption_transforms"](image=augmented["image"])["image"]
+
+            sample = {"image": self.to_tensor(image=img)["image"], "mask": self.to_tensor(image=augmented["mask"])["image"]}
+
+        else:
+            sample = {"image": self.to_tensor(image=img)["image"], "mask": self.to_tensor(image=mask)["image"] if mask is not None else None}
 
         try:
             assert sample['image'].shape[1] % 32 == 0 and sample['image'].shape[2] % 32 == 0, "Image size must be divisible by 32"
-            sample['mask'] = forward_transform_mask(image=mask)['image'] if mask is not None else [0]
-
+            sample['id'] = self.encodings.iloc[idx, 0]
             return sample
-
         
         except AssertionError as msg:
             print(msg)
-            

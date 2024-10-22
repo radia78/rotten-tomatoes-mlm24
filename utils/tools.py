@@ -1,13 +1,11 @@
 import matplotlib.pyplot as plt
 from torchvision.transforms.v2 import Resize, InterpolationMode
-from data_loading import IMAGE_HEIGHT, IMAGE_WIDTH, rl_decode
-import cv2
+from utils.data import IMAGE_HEIGHT, IMAGE_WIDTH, rl_decode
 import torch
 import os
 import pandas as pd
 from PIL import Image
 import numpy as np
-
 
 def display_image_and_mask(image, mask, imgname, save_dir='test_img_results', figsize=(10, 6)):
     plt.figure(figsize=figsize)
@@ -55,17 +53,10 @@ def encode_mask(mask: torch.Tensor, threshold: float):
 
     return run_length_encode(mask)
 
-def encode_mask_img(mask: Image.Image):
-    mask = np.array(mask)
-    # print(mask.shape)
-    mask = mask.flatten().tolist()
-
-    return run_length_encode(mask)
-
 def load_and_decode(train_csv, img_dir):
     train_data = pd.read_csv(train_csv)
     images, masks = [], []
-    for idx, row in train_data.iterrows():
+    for _, row in train_data.iterrows():
         img_path = f"{img_dir}/{row['id']}.jpg"
         img = Image.open(img_path)
         mask = rl_decode(row['annotation'])
@@ -76,7 +67,7 @@ def load_and_decode(train_csv, img_dir):
 def load_images(train_csv, img_dir, to_np_array=True):
     train_data = pd.read_csv(train_csv)
     images = []
-    for idx, row in train_data.iterrows():
+    for _, row in train_data.iterrows():
         id = row['id']
         img_path = f"{img_dir}/{id}.jpg"
         img = Image.open(img_path)

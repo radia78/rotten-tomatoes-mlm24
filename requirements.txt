@@ -1,5 +1,5 @@
 segmentation_models_pytorch
-torchvision
+torchvisioncl
 albumentations
 pandas
 pytest
