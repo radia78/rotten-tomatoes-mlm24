@@ -1,47 +1,38 @@
 import torch
 import os
 import pandas as pd
-import argparse
-from utils.utils import encode_mask, load_and_decode, display_image_and_mask
-from utils.data_loading import TomatoLeafDataset
+from utils.tools import encode_mask
+from utils.data import TomatoLeafDataset
 from torch.utils.data import DataLoader
-from unet.model import TomatoLeafModel
-from matplotlib import pyplot as plt
+from segmentation_models_pytorch import Unet
+from models import configs
 
-def main():
-    parser = argparse.ArgumentParser(description="Predict the tomato leaf mask")
-    parser.add_argument('-i', '--image', action='store_true', help="Generate and save prediction images")
-    args = parser.parse_args()
+DIR = "data/"
+model_ckpt_file = os.listdir("model_checkpoint")[-1]
 
-    TESTDIR = "data/"
-    model_ckpt_file = os.listdir("model_checkpoint")[-1]
+# Load the test dataset and model
+test_loader = TomatoLeafDataset(root="data/leaf_veins")
+model_config = configs.SMPUnetConfig()
+model = Unet(
+    encoder_name=model_config.encoder_name,
+    encoder_weights=model_config.encoder_weights,
+    in_channels=model_config.in_channels,
+    decoder_use_batchnorm=model_config.decoder_use_batchnorm,
+    decoder_attention_type=model_config.decoder_attention_type,
+    classes=model_config.classes
+)
+weights = torch.load("model_checkpoint/" + model_ckpt_file, weights_only=True)
+model.load_state_dict(weights)
+test_df = pd.read_csv("data/leaf_veins/test.csv")
 
-    # Load the test dataset and model
-    test_loader = DataLoader(TomatoLeafDataset(TESTDIR + "test.csv", TESTDIR + "test"), batch_size=1)
-    model = TomatoLeafModel()
-    weights = torch.load("model_checkpoint/" + model_ckpt_file, weights_only=True)
-    model.load_state_dict(weights)
-    test_df = pd.read_csv(TESTDIR + "test.csv")
+# Create predictions for each of image and append it to the csv file
+for sample in test_loader:
+    img = sample['image']
 
-    # Create predictions for each of image and append it to the csv file
-    for sample in test_loader:
-        img = sample['image']
+    pred_mask = model(img.unsqueeze(0))
+    test_df['annotation'] = encode_mask(pred_mask.detach(), 0.5)
 
-        pred_mask = model(img)
-        test_df['annotation'] = encode_mask(pred_mask.detach(), 0.9)
+if not os.path.exists("predictions"):
+    os.makedirs("predictions")
 
-    if not os.path.exists("predictions"):
-        os.makedirs("predictions")
-
-    test_df.to_csv("predictions/sample_submission.csv")
-
-    if args.image:
-        images, masks = load_and_decode("predictions/sample_submission.csv", TESTDIR + "test")
-        for i in range(len(images)):
-            name = test_df.iloc[i]['id']
-            display_image_and_mask(images[i], masks[i], name, "predictions/images")
-
-           
-
-if __name__ == "__main__":
-    main()
+test_df.to_csv("predictions/sample_submission.csv")

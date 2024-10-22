@@ -1,0 +1,3 @@
+Jaccard Indexes: 
+Average of each Image: 0.2419038712978363
+Average of across all images: 0.24039793014526367
