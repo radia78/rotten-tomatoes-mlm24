@@ -27,9 +27,12 @@ def main():
     # Create predictions for each of image and append it to the csv file
     for sample in test_loader:
         img = sample['image']
+        id = sample['id'][0]
+        print(f"Predicting for image: {id}")
 
         pred_mask = model(img)
-        test_df['annotation'] = encode_mask(pred_mask.detach(), 0.9)
+        test_df.loc[test_df['id'] == id, 'annotation'] = encode_mask(pred_mask.detach(), 0.9)
+        # test_df['annotation'] = encode_mask(pred_mask.detach(), 0.9)
 
     if not os.path.exists("predictions"):
         os.makedirs("predictions")
