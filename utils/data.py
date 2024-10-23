@@ -112,6 +112,7 @@ class TomatoLeafDataset(Dataset):
         try:
             assert sample['image'].shape[1] % 32 == 0 and sample['image'].shape[2] % 32 == 0, "Image size must be divisible by 32"
             sample['id'] = self.encodings.iloc[idx, 0]
+            
             return sample
         
         except AssertionError as msg:

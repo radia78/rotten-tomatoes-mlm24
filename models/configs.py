@@ -6,8 +6,8 @@ File contains all the configurations for the model
 
 @dataclass
 class UnetConfig:
-    encoder_name: str="resnet34"
-    encoder_weights: str="imagenet"
+    encoder_name: str="resnet18"
+    encoder_weights: str="swsl"
     in_channels: int=3
     decoder_use_batchnorm: bool=True
     decoder_attention_type: str="scse"

@@ -68,7 +68,7 @@ def main():
     parser.add_argument('model', default="unet", type=str)
 
     # Training arguments
-    parser.add_argument('-e', '--epoch', default=100, type=int)
+    parser.add_argument('-e', '--epochs', default=100, type=int)
     parser.add_argument('-t', '--threshold', default=0.7, type=float)
     parser.add_argument('-d', '--device', default="cpu", type=str)
     parser.add_argument('-n', '--num-workers', default=os.cpu_count() // 2, type=int)
@@ -87,6 +87,10 @@ def main():
 
     # Load the model and associated configurations
     model, model_config = load_model(args.model)
+
+    # Print the model name and configuration
+    print("Selected model: ", args.model)
+    print(f"{args.model} configuration: ", model_config)
 
     # Training components loaded
     optimizer = optim.AdamW(model.parameters(), lr=2e-4)
