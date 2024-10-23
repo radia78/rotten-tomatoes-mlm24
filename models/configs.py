@@ -5,7 +5,7 @@ File contains all the configurations for the model
 """
 
 @dataclass
-class SMPUnetConfig:
+class UnetConfig:
     encoder_name: str="resnet34"
     encoder_weights: str="imagenet"
     in_channels: int=3
@@ -14,7 +14,7 @@ class SMPUnetConfig:
     classes: int=1
 
 @dataclass
-class DexnedSegmenterConfig:
+class DexinedSegmenterConfig:
     classes: int=1
     activation: any=None
     pretrained: bool=True

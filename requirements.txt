@@ -1,5 +1,5 @@
 segmentation_models_pytorch
-torchvisioncl
+torchvision
 albumentations
 pandas
 pytest
@@ -7,3 +7,4 @@ matplotlib
 tensorboard
 kaggle
 torchsummary
+kornia
