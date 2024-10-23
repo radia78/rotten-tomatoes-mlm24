@@ -107,7 +107,7 @@ class TomatoLeafDataset(Dataset):
             sample = {"image": self.to_tensor(image=img)["image"], "mask": self.to_tensor(image=augmented["mask"])["image"]}
 
         else:
-            sample = {"image": self.to_tensor(image=img)["image"], "mask": self.to_tensor(image=mask)["image"] if mask is not None else None}
+            sample = {"image": self.to_tensor(image=img)["image"], "mask": self.to_tensor(image=mask)["image"] if mask is not None else []}
 
         try:
             assert sample['image'].shape[1] % 32 == 0 and sample['image'].shape[2] % 32 == 0, "Image size must be divisible by 32"

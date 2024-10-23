@@ -1,4 +1,4 @@
-predictions/images
+predictions/
 data/*
 !data/scripts
 utils/__pycache__/
