@@ -1,5 +1,9 @@
 predictions/images
-data/train/vertical_flipped
-data/train/composed_test/
+data/*
+!data/scripts
 utils/__pycache__/
 unet/__pycache__/
+*.
+others/
+log/
+model_checkpoint/
