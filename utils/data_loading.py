@@ -6,7 +6,6 @@ import numpy as np
 import cv2
 from PIL import Image
 from torch.utils.data import Dataset
-from utils.data_generator import augmentation_transforms
 from albumentations import (
     Resize,
     Compose,
@@ -89,6 +88,7 @@ class TomatoLeafDataset(Dataset):
         try:
             assert sample['image'].shape[1] % 32 == 0 and sample['image'].shape[2] % 32 == 0, "Image size must be divisible by 32"
             sample['mask'] = forward_transform_mask(image=mask)['image'] if mask is not None else [0]
+            sample['id'] = self.encodings.iloc[idx, 0]
 
             return sample
 
