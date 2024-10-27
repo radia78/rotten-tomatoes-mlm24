@@ -87,7 +87,8 @@ def main():
     )
 
     # Load the model and associated configurations
-    model, model_config = load_model(args.model)
+    model_name = args.model
+    model, model_config = load_model(model_name)
 
     # Training components loaded
     optimizer = optim.AdamW(model.parameters(), lr=2e-4)
@@ -99,6 +100,7 @@ def main():
             pin_memory=False
             ),
         model=model,
+        model_name=model_name,
         loss_fn=smp.losses.JaccardLoss(
             mode="binary",
             from_logits=True

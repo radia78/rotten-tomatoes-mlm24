@@ -21,6 +21,9 @@ class BaseTrainingSession:
         self.model = args.model
         self.model.to(args.device)
 
+        # Load the model name
+        self.model_name = args.model_name
+
         # Configured optimizer and scheduler
         self.scheduler = args.scheduler
         self.optimizer = args.optimizer
@@ -134,16 +137,17 @@ class BaseTrainingSession:
         self.save_model()
 
     def save_model(self):
-        if not os.path.exists("model_checkpoint/"):
-            os.makedirs("model_checkpoint/")
+        if not os.path.exists(f"model_checkpoint/{self.model_name}"):
+            os.makedirs(f"model_checkpoint/{self.model_name}")
             
-        model_path = f"model_checkpoint/model_{self.timestamp}.pt"
+        model_path = f"model_checkpoint/{self.model_name}/model_{self.timestamp}.pt"
         torch.save(self.model.state_dict(), model_path)
 
 @dataclass
 class BaseTrainingSessionConfig:
     dataloader: DataLoader
     model: torch.nn.Module
+    model_name: str
     loss_fn: any
     optimizer: torch.optim.Optimizer
     scheduler: torch.optim.lr_scheduler.LRScheduler
