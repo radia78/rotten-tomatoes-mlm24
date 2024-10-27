@@ -1,6 +1,6 @@
 from . import configs
-from . import dexinet
-from . import dexiunet
+# from . import dexinet
+# from . import dexiunet
 import segmentation_models_pytorch as smp
 
 def load_model(model_name: str="unet"):
@@ -26,26 +26,26 @@ def load_model(model_name: str="unet"):
                     classes=model_config.classes
                 )
             
-            case "dexined-segmenter":
-                model_config = configs.DexinedSegmenterConfig()
-                model = dexinet.DexinedSegmenter(
-                    classes=model_config.classes,
-                    activation=model_config.activation,
-                    pretrained=model_config.pretrained
-                )
+            # case "dexined-segmenter":
+            #     model_config = configs.DexinedSegmenterConfig()
+            #     model = dexinet.DexinedSegmenter(
+            #         classes=model_config.classes,
+            #         activation=model_config.activation,
+            #         pretrained=model_config.pretrained
+            #     )
 
-            case "dexiunet":
-                model_config = configs.DexiUnetConfig()
-                model = dexiunet.DexiUnet(
-                    encoder_channels=model_config.encoder_channels,
-                    decoder_channels=model_config.decoder_channels,
-                    decoder_depth=model_config.decoder_depth,
-                    use_batchnorm=model_config.use_batchnorm,
-                    attention_type=model_config.attention_type,
-                    center=model_config.center,
-                    classes=model_config.classes, 
-                    activation=model_config.activation, 
-                    pretrained=model_config.pretrained
-                )
+            # case "dexiunet":
+            #     model_config = configs.DexiUnetConfig()
+            #     model = dexiunet.DexiUnet(
+            #         encoder_channels=model_config.encoder_channels,
+            #         decoder_channels=model_config.decoder_channels,
+            #         decoder_depth=model_config.decoder_depth,
+            #         use_batchnorm=model_config.use_batchnorm,
+            #         attention_type=model_config.attention_type,
+            #         center=model_config.center,
+            #         classes=model_config.classes, 
+            #         activation=model_config.activation, 
+            #         pretrained=model_config.pretrained
+            #     )
 
         return model, model_config

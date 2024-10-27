@@ -142,6 +142,7 @@ class BaseTrainingSession:
             
         model_path = f"model_checkpoint/{self.model_name}/model_{self.timestamp}.pt"
         torch.save(self.model.state_dict(), model_path)
+        print(f"Model successfully saved at: {model_path}")
 
 @dataclass
 class BaseTrainingSessionConfig:

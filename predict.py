@@ -15,17 +15,19 @@ def main():
     
     args = parser.parse_args()
 
-    TESTDIR = "data/"
-    model_ckpt_file = os.listdir("model_checkpoint")[-1]
+    TESTDIR = "data/leaf_veins/"
+    model_ckpt_dir = f"model_checkpoint/{args.model}"
+    model_ckpt_file = os.path.join(model_ckpt_dir, os.listdir(model_ckpt_dir)[-1])
     print(f"Using model checkpoint: {model_ckpt_file}")
 
     # Load the test dataset and model
-    test_loader = DataLoader(TomatoLeafDataset(TESTDIR + "test.csv", TESTDIR + "test"), batch_size=1)
+    # test_loader = DataLoader(TomatoLeafDataset(TESTDIR + "test.csv", TESTDIR + "test"), batch_size=1)
+    test_loader = DataLoader(TomatoLeafDataset(root=TESTDIR, split="test"), batch_size=1)
     # model = TomatoLeafModel()
     model, model_config = load_model(args.model)
-    weights = torch.load("model_checkpoint/" + model_ckpt_file, weights_only=True)
+    weights = torch.load(model_ckpt_file, weights_only=True)
     model.load_state_dict(weights)
-    test_df = pd.read_csv(TESTDIR + "test.csv")
+    test_df = pd.read_csv(os.path.join(TESTDIR, "test.csv"))
 
     # Create predictions for each of image and append it to the csv file
     for sample in test_loader:

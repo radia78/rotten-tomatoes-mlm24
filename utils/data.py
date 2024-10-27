@@ -69,11 +69,13 @@ def rl_decode(enc, shape=(IMAGE_HEIGHT, IMAGE_WIDTH)):
 class TomatoLeafDataset(Dataset):
     def __init__(self, root: str, split: str="train", transforms=None):
         # Create the directories and open the csv-files
-        self.csv_file = f"{root}/{split}.csv"
+        self.csv_file = os.path.join(root, f"{split}.csv")
         self.encodings = pd.read_csv(self.csv_file)
-        self.image_dir = f"{root}/{split}"
+        self.image_dir = os.path.join(root, split)
         self.transforms = transforms
         self.to_tensor = ToTensorV2()
+
+        print(f"self.csv_file: {self.csv_file}")
 
     def __len__(self):
         return len(self.encodings)
@@ -105,10 +107,10 @@ class TomatoLeafDataset(Dataset):
             augmented = self.transforms["augmentation_transforms"](image=img, mask=mask)
             img = self.transforms["corruption_transforms"](image=augmented["image"])["image"]
 
-            sample = {"image": self.to_tensor(image=img)["image"], "mask": self.to_tensor(image=augmented["mask"])["image"]}
+            sample = {"image": self.to_tensor(image=img)["image"], "mask": self.to_tensor(image=augmented["mask"])["image"] if mask is not None else [0]}
 
         else:
-            sample = {"image": self.to_tensor(image=img)["image"], "mask": self.to_tensor(image=mask)["image"] if mask is not None else None}
+            sample = {"image": self.to_tensor(image=img)["image"], "mask": self.to_tensor(image=mask)["image"] if mask is not None else [0]}
 
         try:
             assert sample['image'].shape[1] % 32 == 0 and sample['image'].shape[2] % 32 == 0, "Image size must be divisible by 32"
@@ -116,4 +118,4 @@ class TomatoLeafDataset(Dataset):
             return sample
         
         except AssertionError as msg:
-            print(msg)
+            print("GETITEM ERROR:", msg)

@@ -1,6 +1,3 @@
-import models.configs
-import models.dexinet
-import models.dexiunet
 from utils.training import BaseTrainingSession, BaseTrainingSessionConfig
 from utils.data import TomatoLeafDataset, transforms_dict
 from torch.utils.data import DataLoader
@@ -69,7 +66,7 @@ def main():
     parser.add_argument('model', default="unet", type=str)
 
     # Training arguments
-    parser.add_argument('-e', '--epoch', default=100, type=int)
+    parser.add_argument('-e', '--epochs', default=100, type=int)
     parser.add_argument('-t', '--threshold', default=0.7, type=float)
     parser.add_argument('-d', '--device', default="cpu", type=str)
     parser.add_argument('-n', '--num-workers', default=os.cpu_count() // 2, type=int)
