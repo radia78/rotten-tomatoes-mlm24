@@ -2,15 +2,17 @@ import torch
 import os
 import pandas as pd
 import argparse
-from utils.utils import encode_mask, load_and_decode, display_image_and_mask
-from utils.data_loading import TomatoLeafDataset
+from utils.tools import encode_mask, load_and_decode, display_image_and_mask
+from utils.data import TomatoLeafDataset
 from torch.utils.data import DataLoader
-from unet.model import TomatoLeafModel
+from models import load_model
 from matplotlib import pyplot as plt
 
 def main():
     parser = argparse.ArgumentParser(description="Predict the tomato leaf mask")
     parser.add_argument('-i', '--image', action='store_true', help="Generate and save prediction images")
+    parser.add_argument('model', default="unet", type=str)
+    
     args = parser.parse_args()
 
     TESTDIR = "data/"
@@ -19,7 +21,8 @@ def main():
 
     # Load the test dataset and model
     test_loader = DataLoader(TomatoLeafDataset(TESTDIR + "test.csv", TESTDIR + "test"), batch_size=1)
-    model = TomatoLeafModel()
+    # model = TomatoLeafModel()
+    model, model_config = load_model(args.model)
     weights = torch.load("model_checkpoint/" + model_ckpt_file, weights_only=True)
     model.load_state_dict(weights)
     test_df = pd.read_csv(TESTDIR + "test.csv")
