@@ -44,8 +44,8 @@ forward_transform_mask = Compose([
     ])
 
 corruption_transforms = Compose([
-    GaussNoise(p=0.7, var_limit=(1, 5)),
-    CoarseDropout(p=0.7, num_holes_range=(5000, 10000))
+    # GaussNoise(p=0.7, var_limit=(1, 5)),
+    # CoarseDropout(p=0.7, num_holes_range=(200, 700))
 ])
 
 augmentation_transforms = Compose([

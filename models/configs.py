@@ -14,6 +14,15 @@ class UnetConfig:
     classes: int=1
 
 @dataclass
+class UnetConfig_NoPretrained:
+    encoder_name: str="resnet34"
+    encoder_weights: str=None
+    in_channels: int=3
+    decoder_use_batchnorm: bool=True
+    decoder_attention_type: str="scse"
+    classes: int=1
+
+@dataclass
 class DexinedSegmenterConfig:
     classes: int=1
     activation: any=None

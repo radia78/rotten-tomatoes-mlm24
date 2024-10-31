@@ -6,6 +6,7 @@ import segmentation_models_pytorch as smp
 def load_model(model_name: str="unet"):
     model_names_list = [
         "unet",
+        "unet-no-pretrained",
         "dexined-segmenter",
         "dexiunet"
     ]
@@ -17,6 +18,17 @@ def load_model(model_name: str="unet"):
         match model_name:
             case "unet":
                 model_config = configs.UnetConfig()
+                model = smp.Unet(
+                    encoder_name=model_config.encoder_name,
+                    encoder_weights=model_config.encoder_weights,
+                    in_channels=model_config.in_channels,
+                    decoder_use_batchnorm=model_config.decoder_use_batchnorm,
+                    decoder_attention_type=model_config.decoder_attention_type,
+                    classes=model_config.classes
+                )
+            
+            case "unet-no-pretrained":
+                model_config = configs.UnetConfig_NoPretrained()
                 model = smp.Unet(
                     encoder_name=model_config.encoder_name,
                     encoder_weights=model_config.encoder_weights,
