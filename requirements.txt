@@ -6,5 +6,5 @@ pytest
 matplotlib
 tensorboard
 kaggle
-torchsummary
 kornia
+lightning
