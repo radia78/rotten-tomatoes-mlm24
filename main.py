@@ -5,31 +5,42 @@ import pandas as pd
 import os
 import torch
 from torch import nn
+import torch._dynamo.config
 from utils.tools import encode_mask
 from utils.data import TomatoLeafDataModule, RetinalVesselDataModule
 
 class TrainingModule(LightningModule):
-    def __init__(self,net: nn.Module, criterion: nn.Module, threshold: float=0.9):
+    def __init__(self,net: nn.Module, criterion: nn.Module, threshold: float=0.9, ssl_training: bool=False):
         super().__init__()
         self.net = net
         self.criterion = criterion
         self.threshold = threshold
+        self.ssl_training = ssl_training
         self.training_step_outputs = []
         self.val_step_outputs = []
 
-    def forward(self, x):
-        return self.net(x)
+    def forward(self, x, ssl_training=None):
+        return self.net(x, ssl_training)
     
     def training_step(self, batch, batch_idx):
-        x, y = batch["image"], batch["mask"]
-        y_pred = self.net(x)
-        loss = self.criterion(y_pred, y)
+        # SSL training logic
+        if self.ssl_training:
+            x, y = batch["image"], batch["mask"]
+            y_pred = self.net(x)
+            loss = self.criterion(y_pred, y)
+        
+        # UNet training logic
+        else:
+            x = batch["image"]
+            z1, z2 = self.net(x, self.ssl_training)
+            loss = self.criterion(z1, z2)
+
         self.training_step_outputs.append(loss)
         return loss
     
     def on_train_epoch_end(self):
         epoch_mean = torch.stack(self.training_step_outputs).mean()
-        self.log("Training Avg Epoch Loss", epoch_mean)
+        self.log("Training Avg Epoch Loss", epoch_mean, on_epoch=True)
         self.training_step_outputs.clear()
     
     def validation_step(self, batch, batch_idx):
@@ -41,7 +52,7 @@ class TrainingModule(LightningModule):
     
     def on_validation_epoch_end(self):
         epoch_mean = torch.stack(self.val_step_outputs).mean()
-        self.log("Validation Avg Epoch Loss", epoch_mean)
+        self.log("Validation Avg Epoch Loss", epoch_mean, on_epoch=True)
         self.val_step_outputs.clear()
     
     def predict_step(self, batch, batch_idx):

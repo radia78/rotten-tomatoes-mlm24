@@ -1,0 +1,41 @@
+# lightning.pytorch==2.4.0
+seed_everything: true
+trainer:
+  accelerator: 'cuda'
+  logger: 
+    class_path: lightning.pytorch.loggers.TensorBoardLogger
+    init_args:
+      save_dir: '_5_barlow_twins_unet_logs/ssl_training_logs'
+  max_epochs: 1000
+  log_every_n_steps: 100
+  enable_checkpointing: true
+  enable_progress_bar: true
+  enable_model_summary: true
+  accumulate_grad_batches: 1
+model:
+  net:
+    class_path: models.barlow_twins.BarloTwinsUnet
+    init_args:
+      encoder_name: 'resnet34'
+      encoder_weights: null
+      in_channels: 3
+      decoder_use_batchnorm: true
+      decoder_attention_type: 'scse'
+      classes: 1
+  criterion:
+    class_path: models.barlow_twins.CrossCorrelationLoss
+    init_args:
+      lambd: 0.2
+  ssl_training: true
+data:
+  class_path: RetinalVesselDataModule
+  init_args:
+    data_dir: data/retinal_vessel/
+    batch_size: 4
+    num_workers: 2
+optimizer: AdamW
+lr_scheduler:
+  class_path: torch.optim.lr_scheduler.CosineAnnealingLR
+  init_args:
+    T_max: 2800
+ckpt_path: null

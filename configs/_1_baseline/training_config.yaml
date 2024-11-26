@@ -1,0 +1,41 @@
+# lightning.pytorch==2.4.0
+seed_everything: true
+trainer:
+  accelerator: 'cuda'
+  logger: 
+    class_path: lightning.pytorch.loggers.TensorBoardLogger
+    init_args:
+      save_dir: '_1_baseline_training_logs'
+  max_epochs: 100
+  log_every_n_steps: 25
+  enable_checkpointing: true
+  enable_progress_bar: true
+  enable_model_summary: true
+  accumulate_grad_batches: 1
+model:
+  net:
+    class_path: segmentation_models_pytorch.Unet
+    init_args:
+      encoder_name: 'resnet34'
+      encoder_weights: null
+      in_channels: 3
+      decoder_use_batchnorm: true
+      decoder_attention_type: 'scse'
+      classes: 1
+  criterion:
+    class_path: segmentation_models_pytorch.losses.JaccardLoss
+    init_args:
+      mode: 'binary'
+      from_logits: true
+data:
+  class_path: TomatoLeafDataModule
+  init_args: 
+    data_dir: data/leaf_veins/
+    batch_size: 4
+    num_workers: 2
+optimizer: AdamW
+lr_scheduler:
+  class_path: torch.optim.lr_scheduler.CosineAnnealingLR
+  init_args:
+    T_max: 1700
+ckpt_path: null

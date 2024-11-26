@@ -1,15 +1,17 @@
 # lightning.pytorch==2.4.0
 seed_everything: true
 trainer:
-  callbacks:
-    class_path: PredictionWriter
+  accelerator: 'cuda'
+  logger: 
+    class_path: lightning.pytorch.loggers.TensorBoardLogger
     init_args:
-      output_dir: 'predictions'
-  logger: false
-  accelerator: 'mps'
+      save_dir: '_2_pretrain_retinal_vessel_logs/training_logs'
+  max_epochs: 200
+  log_every_n_steps: 25
+  enable_checkpointing: true
   enable_progress_bar: true
   enable_model_summary: true
-  inference_mode: true
+  accumulate_grad_batches: 1
 model:
   net:
     class_path: segmentation_models_pytorch.Unet
@@ -26,8 +28,14 @@ model:
       mode: 'binary'
       from_logits: true
 data:
-  data_dir: data/leaf_veins/
-  batch_size: 1
-  num_workers: 4
-return_predictions: false
-ckpt_path: "lightning_logs/lightning_logs/version_2/checkpoints/epoch=2-step=9.ckpt"
+  class_path: TomatoLeafDataModule
+  init_args: 
+    data_dir: data/leaf_veins/
+    batch_size: 4
+    num_workers: 2
+optimizer: AdamW
+lr_scheduler:
+  class_path: torch.optim.lr_scheduler.CosineAnnealingLR
+  init_args:
+    T_max: 1700
+ckpt_path: null

@@ -3,6 +3,7 @@ data/*
 !data/scripts
 utils/__pycache__/
 unet/__pycache__/
+models/__pycache__/
 *.
 others/
 log/
