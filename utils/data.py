@@ -43,8 +43,8 @@ class TomatoLeafDataset(Dataset):
         self.preprocess_img = Compose([
             ToTensor(),
             Resize(
-                self.transform_image_size(IMAGE_HEIGHT, SCALE), 
-                self.transform_image_size(IMAGE_WIDTH, SCALE),
+                (self.transform_image_size(IMAGE_HEIGHT, SCALE), 
+                self.transform_image_size(IMAGE_WIDTH, SCALE)),
                 interpolation=InterpolationMode.BICUBIC
             ),
             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
@@ -53,8 +53,8 @@ class TomatoLeafDataset(Dataset):
         self.preprocess_mask = Compose([
             ToTensor(),
             Resize(
-                self.transform_image_size(IMAGE_HEIGHT, SCALE), 
-                self.transform_image_size(IMAGE_WIDTH, SCALE),
+                (self.transform_image_size(IMAGE_HEIGHT, SCALE), 
+                self.transform_image_size(IMAGE_WIDTH, SCALE)),
                 interpolation=InterpolationMode.NEAREST_EXACT
             )
         ])
@@ -129,7 +129,7 @@ class RetinalVesselDataset(Dataset):
         ])
         self.preprocess_img = Compose([
             ToTensor(),
-            Resize((960, 960), interpolation=cv2.INTER_CUBIC),
+            Resize((960, 960), interpolation=InterpolationMode.BICUBIC),
             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
         ])
 
@@ -169,7 +169,7 @@ class RetinalVesselDataModule(L.LightningDataModule):
         ])
 
         geometric_transforms = Compose([
-            RandomAffine(degrees=(0, 360), translate=(0.5, 0.5), interpolation=InterpolationMode.BICUBIC)
+            RandomAffine(degrees=(0, 360), translate=(0.5, 0.5), interpolation=InterpolationMode.BILINEAR)
         ])
 
         self.transforms = {
@@ -210,7 +210,7 @@ class TomatoLeafDataModule(L.LightningDataModule):
         ])
 
         geometric_transforms = Compose([
-            RandomAffine(degrees=(0, 360), translate=(0.5, 0.5), interpolation=InterpolationMode.BICUBIC)
+            RandomAffine(degrees=(0, 360), translate=(0.5, 0.5), interpolation=InterpolationMode.BILINEAR)
         ])
 
         self.transforms = {

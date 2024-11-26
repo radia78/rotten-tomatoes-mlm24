@@ -10,7 +10,7 @@ from utils.tools import encode_mask
 from utils.data import TomatoLeafDataModule, RetinalVesselDataModule
 
 class TrainingModule(LightningModule):
-    def __init__(self,net: nn.Module, criterion: nn.Module, threshold: float=0.9, ssl_training: bool=False):
+    def __init__(self,net: nn.Module, criterion: nn.Module, threshold: float=0.9, ssl_training: any=None):
         super().__init__()
         self.net = net
         self.criterion = criterion
@@ -20,21 +20,23 @@ class TrainingModule(LightningModule):
         self.val_step_outputs = []
 
     def forward(self, x, ssl_training=None):
-        return self.net(x, ssl_training)
+        if ssl_training is not None:
+            return self.net(x, ssl_training)
+        else:
+            return self.net(x)
     
     def training_step(self, batch, batch_idx):
         # SSL training logic
         if self.ssl_training:
-            x, y = batch["image"], batch["mask"]
-            y_pred = self.net(x)
-            loss = self.criterion(y_pred, y)
+            x = batch["image"]
+            z1, z2 = self.forward(x, self.ssl_training)
+            loss = self.criterion(z1, z2)
         
         # UNet training logic
         else:
-            x = batch["image"]
-            z1, z2 = self.net(x, self.ssl_training)
-            loss = self.criterion(z1, z2)
-
+            x, y = batch["image"], batch["mask"]
+            y_pred = self.forward(x, self.ssl_training)
+            loss = self.criterion(y_pred, y)
         self.training_step_outputs.append(loss)
         return loss
     
