@@ -5,16 +5,17 @@ import math
 import numpy as np
 import cv2
 from torch.utils.data import Dataset, DataLoader, random_split
-from kornia.augmentation import RandomGaussianNoise
-from torchvision.transforms.v2 import (
+from albumentations import (
     Compose,
-    Resize,
     Normalize,
-    RandomAffine,
-    RandomErasing,
-    InterpolationMode,
-    ToTensor
+    Resize,
+    CoarseDropout,
+    Solarize,
+    ColorJitter,
+    VerticalFlip,
+    GaussNoise
 )
+from albumentations.pytorch.transforms import ToTensorV2
 import lightning as L
 
 IMAGE_HEIGHT = 1400
@@ -30,45 +31,47 @@ def rl_decode(enc, shape=(IMAGE_HEIGHT, IMAGE_WIDTH)):
         dec += cnt * [val]
     return np.array(dec, dtype=np.uint8).reshape(shape)
 
-class TomatoLeafDataset(Dataset):
-    def __init__(self, root: str, split: str="train", transforms=None):
+class BaseSegmentationDataset(Dataset):
+    def __init__(self, img_height: int, img_width: int, transforms=None):
+        # Preprocess tranforms
+        self.preprocess_img = Compose([
+            Resize(
+                self.transform_image_size(img_height, 32), 
+                self.transform_image_size(img_width, 32),
+                interpolation=cv2.INTER_CUBIC
+            ),
+            Normalize()
+        ])
+
+        self.preprocess_mask = Compose([
+            Resize(
+                self.transform_image_size(img_height, 32), 
+                self.transform_image_size(img_width, 32),
+                interpolation=cv2.INTER_NEAREST_EXACT
+            )
+        ])
+
+        # Additional transforms
+        self.transforms = transforms
+        self.to_tensor = ToTensorV2()
+
+    def transform_image_size(self, size, scale):
+        return math.ceil(size/scale) * scale
+    
+    def preprocess(self, image, mask):
+        return self.preprocess_img(image=image)['image'], self.preprocess_mask(image=mask)['image'] if mask is not None else None
+
+class TomatoLeafDataset(BaseSegmentationDataset):
+    def __init__(self, root: str, split: str="train", img_height: int=1400, img_width: int=875, transforms=None):
+        super().__init__(img_height, img_width, transforms)
         # Create the directories and open the csv-files
         self.csv_file = f"{root}/{split}.csv"
         self.encodings = pd.read_csv(self.csv_file)
         self.image_dir = f"{root}/{split}"
         self.split = split
 
-        # Preprocess tranforms
-        self.preprocess_img = Compose([
-            ToTensor(),
-            Resize(
-                (self.transform_image_size(IMAGE_HEIGHT, SCALE), 
-                self.transform_image_size(IMAGE_WIDTH, SCALE)),
-                interpolation=InterpolationMode.BICUBIC
-            ),
-            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
-        ])
-
-        self.preprocess_mask = Compose([
-            ToTensor(),
-            Resize(
-                (self.transform_image_size(IMAGE_HEIGHT, SCALE), 
-                self.transform_image_size(IMAGE_WIDTH, SCALE)),
-                interpolation=InterpolationMode.NEAREST_EXACT
-            )
-        ])
-
-        # Additional transforms
-        self.transforms = transforms
-
-    def transform_image_size(self, size, scale):
-        return math.ceil(size/scale) * scale
-
     def __len__(self):
         return len(self.encodings)
-    
-    def preprocess(self, image, mask):
-        return self.preprocess_img(image), self.preprocess_mask(mask) if mask is not None else None
 
     def __getitem__(self, idx):
         idx = idx.tolist() if torch.is_tensor(idx) else idx
@@ -89,24 +92,24 @@ class TomatoLeafDataset(Dataset):
             # Apply the transformation
             if self.transforms is not None:
                 # Geometric transformations
-                aug_img, aug_mask = self.transforms["geometric"](img), self.transforms["geometric"](mask)
+                augmented = self.transforms["geometric"](image=img, mask=mask)
                 
                 # Image based transformations
-                img = self.transforms["image"](aug_img)
+                img = self.transforms["image"](image=augmented['image'])
 
             # Return the ID, image, and mask if it is training
             sample = {
                 "id": img_id,
-                "image": aug_img, 
-                "mask": aug_mask
+                "image": self.to_tensor(image=img['image'])['image'], 
+                "mask": self.to_tensor(image=augmented['mask'])['image']
             }
 
         else:
             # Return the ID and image only if it is testing
             img, _ = self.preprocess(img, None)
             sample = {
-                "id": img_id,
-                "image": img
+                "id": self.to_tensor(image=img_id)['image'],
+                "image": self.to_tensor(image=img)['image']
             }
 
         try:
@@ -117,26 +120,14 @@ class TomatoLeafDataset(Dataset):
         except AssertionError as msg:
             print(msg)
 
-class RetinalVesselDataset(Dataset):
-    def __init__ (self, root: str, transforms: any=None):
-        self.transforms = transforms
+class RetinalVesselDataset(BaseSegmentationDataset):
+    def __init__ (self, root: str, img_height: int=960, img_width: int=960, transforms: any=None):
+        super().__init__(img_height, img_width, transforms)
         self.img_dir = os.path.join(root, "img")
         self.mask_dir = os.path.join(root, "masks1")
-        self.resize_mask = Compose([
-            ToTensor(),
-            Resize((960, 960), interpolation=InterpolationMode.NEAREST_EXACT)
-        ])
-        self.preprocess_img = Compose([
-            ToTensor(),
-            Resize((960, 960), interpolation=InterpolationMode.BICUBIC),
-            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
-        ])
 
     def __len__(self):
         return len(os.listdir(self.img_dir))
-    
-    def preprocess(self, img, mask):
-        return self.preprocess_img(img), self.resize_mask(mask)
 
     def __getitem__(self, idx):
         idx = idx.tolist() if torch.is_tensor(idx) else idx
@@ -148,34 +139,36 @@ class RetinalVesselDataset(Dataset):
         img, mask = self.preprocess(img, mask)
 
         if self.transforms is not None:
-            aug_img, aug_mask = self.transforms['geometric'](img), self.transforms['geometric'](mask) 
-            img = self.transforms['image'](aug_img)
+            augmented = self.transforms['geometric'](image=img, mask=mask)
+            img = self.transforms['image'](image=augmented['image'])
 
-            return {'image': aug_img, 'mask': aug_mask}
+            return {'image': img['image'], 'mask': augmented['mask']}
         
         else:
             return {'image':  img, 'mask': mask}
         
-class RetinalVesselDataModule(L.LightningDataModule):
+class BaseSegmentationDataModule(L.LightningDataModule):
     def __init__(self, data_dir: str, batch_size: int, num_workers: int):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
         image_transforms = Compose([
-            RandomGaussianNoise(std=10, p=0.9),
-            RandomErasing(p=0.7)
+            ColorJitter(p=0.7),
+            Solarize(p=0.7),
+            GaussNoise(p=0.7, var_limit=(1, 5)),
+            CoarseDropout(hole_height_range=(8, 16), hole_width_range=(8, 16), num_holes_range=(1_000, 5_000), p=0.7),
         ])
 
         geometric_transforms = Compose([
-            RandomAffine(degrees=(0, 360), translate=(0.5, 0.5), interpolation=InterpolationMode.BILINEAR)
+            VerticalFlip(p=0.5)
         ])
-
         self.transforms = {
             "geometric": geometric_transforms,
             "image": image_transforms
         }
-
+        
+class RetinalVesselDataModule(BaseSegmentationDataModule):
     def setup(self, stage: str=None):
         self.full_dataset = RetinalVesselDataset(self.data_dir, self.transforms)
         self.train_data, self.val_data = random_split(self.full_dataset, [0.8, 0.2])
@@ -197,26 +190,7 @@ class RetinalVesselDataModule(L.LightningDataModule):
             persistent_workers=True
         )
 
-class TomatoLeafDataModule(L.LightningDataModule):
-    def __init__(self, data_dir: str, batch_size: int, num_workers: int):
-        super().__init__()
-        self.data_dir = data_dir
-        self.batch_size = batch_size
-        self.num_workers = num_workers
-        image_transforms = Compose([
-            RandomGaussianNoise(std=10, p=0.9),
-            RandomErasing(p=0.7)
-        ])
-
-        geometric_transforms = Compose([
-            RandomAffine(degrees=(0, 360), translate=(0.5, 0.5), interpolation=InterpolationMode.BILINEAR)
-        ])
-
-        self.transforms = {
-            "geometric": geometric_transforms,
-            "image": image_transforms
-        }
-
+class TomatoLeafDataModule(BaseSegmentationDataModule):
     def setup(self, stage: str=None):
         self.tomato_train = TomatoLeafDataset(
             root=self.data_dir,
