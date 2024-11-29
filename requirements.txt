@@ -1,10 +1,6 @@
 segmentation_models_pytorch
 torchvision
-albumentations
 pandas
-pytest
 matplotlib
 tensorboard
-kaggle
-kornia
 lightning

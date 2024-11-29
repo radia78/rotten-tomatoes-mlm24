@@ -9,8 +9,8 @@ from typing import List, Optional, Union, Any
 class AugmentedUnet(SegmentationModel):
     def __init__(
             self,
-            encoder_name: str = "resnet34",
             encoder_depth: int = 5,
+            encoder_name: str = "resnet34",
             encoder_weights: Optional[str] = "imagenet",
             decoder_use_batchnorm: bool = True,
             decoder_channels: List[int] = (256, 128, 64, 32, 16),
