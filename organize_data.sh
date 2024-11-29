@@ -14,6 +14,6 @@ mkdir -p data/retinal_veins/masks1
 mkdir -p data/retinal_veins/masks2
 mkdir -p data/retinal_veins/img
 mv data/retinal_veins/*.jpg data/retinal_veins/img/
-mv data/retinal_vesin/*1stHO.png data/retinal_veins/masks1
-mv data/retinal_vesin/*2ndHO.png data/retinal_veins/masks2
+mv data/retinal_veins/*1stHO.png data/retinal_veins/masks1
+mv data/retinal_veins/*2ndHO.png data/retinal_veins/masks2
 echo "Finished organizing data"
