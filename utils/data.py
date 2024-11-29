@@ -157,7 +157,15 @@ class BaseSegmentationDataModule(L.LightningDataModule):
             ColorJitter(p=0.7),
             Solarize(p=0.7),
             GaussNoise(p=0.7, var_limit=(1, 5)),
-            CoarseDropout(hole_height_range=(8, 16), hole_width_range=(8, 16), num_holes_range=(1_000, 5_000), p=0.7),
+            CoarseDropout(
+                min_holes=1_000,
+                max_holes=5_000,
+                min_height=8,
+                max_height=16,
+                min_width=8,
+                max_width=16,
+                p=0.7
+            ),
         ])
 
         geometric_transforms = Compose([
