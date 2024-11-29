@@ -28,7 +28,7 @@ model:
 data:
   class_path: TomatoLeafDataModule
   init_args:
-    data_dir:
+    data_dir: data/leaf_veins
     batch_size: 1
     num_workers: 2
 return_predictions: false

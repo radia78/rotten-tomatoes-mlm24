@@ -4,3 +4,6 @@ pandas
 matplotlib
 tensorboard
 lightning
+jsonargparse[signatures]
+kornia
+opencv-python

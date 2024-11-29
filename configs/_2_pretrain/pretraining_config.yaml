@@ -31,12 +31,12 @@ model:
 data:
   class_path: RetinalVesselDataModule
   init_args:
-    data_dir: data/retinal_vessel/
+    data_dir: data/retinal_vessel
     batch_size: 4
     num_workers: 2
 optimizer: AdamW
 lr_scheduler:
   class_path: torch.optim.lr_scheduler.CosineAnnealingLR
   init_args:
-    T_max: 2800
+    T_max: 700
 ckpt_path: null

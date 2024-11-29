@@ -5,14 +5,13 @@ import math
 import numpy as np
 import cv2
 from torch.utils.data import Dataset, DataLoader, random_split
+from kornia.augmentation import RandomGaussianNoise
 from torchvision.transforms.v2 import (
     Compose,
     Resize,
     Normalize,
     RandomAffine,
-    GaussianNoise,
     RandomErasing,
-    RandomApply,
     InterpolationMode,
     ToTensor
 )
@@ -164,7 +163,7 @@ class RetinalVesselDataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         image_transforms = Compose([
-            RandomApply([GaussianNoise(sigma=0.1),]),
+            RandomGaussianNoise(std=10, p=0.9),
             RandomErasing(p=0.7)
         ])
 
@@ -205,7 +204,7 @@ class TomatoLeafDataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         image_transforms = Compose([
-            RandomApply([GaussianNoise(sigma=0.1),]),
+            RandomGaussianNoise(std=10, p=0.9),
             RandomErasing(p=0.7)
         ])
 
