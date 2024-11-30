@@ -9,11 +9,11 @@ from albumentations import (
     Compose,
     Normalize,
     Resize,
-    CoarseDropout,
-    Solarize,
     ColorJitter,
+    GaussNoise,
+    Rotate,
     VerticalFlip,
-    GaussNoise
+    HorizontalFlip
 )
 from albumentations.pytorch.transforms import ToTensorV2
 import lightning as L
@@ -121,7 +121,7 @@ class TomatoLeafDataset(BaseSegmentationDataset):
             print(msg)
 
 class RetinalVesselDataset(BaseSegmentationDataset):
-    def __init__ (self, root: str, img_height: int=960, img_width: int=960, transforms: any=None):
+    def __init__ (self, root: str, img_height: int=960, img_width: int=999, transforms: any=None):
         super().__init__(img_height, img_width, transforms)
         self.img_dir = os.path.join(root, "img")
         self.mask_dir = os.path.join(root, "masks1")
@@ -142,10 +142,10 @@ class RetinalVesselDataset(BaseSegmentationDataset):
             augmented = self.transforms['geometric'](image=img, mask=mask)
             img = self.transforms['image'](image=augmented['image'])
 
-            return {'image': img['image'], 'mask': augmented['mask']}
+            return {'image': self.to_tensor(image=img['image'])['image'], 'mask': self.to_tensor(image=augmented['mask'])['image']}
         
         else:
-            return {'image':  img, 'mask': mask}
+            return {'image':  self.to_tensor(image=img)['image'], 'mask': self.to_tensor(image=mask)['image']}
         
 class BaseSegmentationDataModule(L.LightningDataModule):
     def __init__(self, data_dir: str, batch_size: int, num_workers: int):
@@ -155,21 +155,14 @@ class BaseSegmentationDataModule(L.LightningDataModule):
         self.num_workers = num_workers
         image_transforms = Compose([
             ColorJitter(p=0.7),
-            Solarize(p=0.7),
-            GaussNoise(p=0.7, var_limit=(1, 5)),
-            CoarseDropout(
-                min_holes=1_000,
-                max_holes=5_000,
-                min_height=8,
-                max_height=16,
-                min_width=8,
-                max_width=16,
-                p=0.7
-            ),
+            GaussNoise(p=0.7),
         ])
 
         geometric_transforms = Compose([
-            VerticalFlip(p=0.5)
+            Rotate(limit=(-360, 360), p=0.7),
+            HorizontalFlip(p=0.7),
+            VerticalFlip(p=0.7)
+            
         ])
         self.transforms = {
             "geometric": geometric_transforms,
@@ -178,7 +171,7 @@ class BaseSegmentationDataModule(L.LightningDataModule):
         
 class RetinalVesselDataModule(BaseSegmentationDataModule):
     def setup(self, stage: str=None):
-        self.full_dataset = RetinalVesselDataset(self.data_dir, self.transforms)
+        self.full_dataset = RetinalVesselDataset(root=self.data_dir, transforms=self.transforms)
         self.train_data, self.val_data = random_split(self.full_dataset, [0.8, 0.2])
 
     def train_dataloader(self):
