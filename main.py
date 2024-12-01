@@ -10,14 +10,11 @@ from utils.tools import encode_mask
 from utils.data import TomatoLeafDataModule, RetinalVesselDataModule
 
 class TrainingModule(LightningModule):
-    def __init__(self,net: nn.Module, criterion: nn.Module, threshold: float, point_refine: bool):
+    def __init__(self,net: nn.Module, criterion: nn.Module, threshold: float):
         super().__init__()
         self.net = net
         self.criterion = criterion
         self.threshold = threshold
-        self.point_refine = point_refine
-        if point_refine:
-            self.refine_criterion = nn.BCEWithLogitsLoss()
         self.training_step_outputs = []
         self.val_step_outputs = []
 
@@ -25,22 +22,9 @@ class TrainingModule(LightningModule):
         return self.net(x)
     
     def training_step(self, batch, batch_idx):
-        # point refinement logic
-        if self.point_refine:
-            x, y = batch["image"], batch['mask']
-            N = x.shape[0]
-            idx, coarse_masks, refined_points = self.forward(x)
-            K = idx.shape[-1]
-            coarse_loss = self.criterion(coarse_masks, y)
-            refine_targets = y.view(N, -1)[torch.arange(N).unsqueeze(1), idx].view(N, K)
-            refine_loss = self.refine_criterion(refined_points.view(N, K), refine_targets.float())
-            loss = coarse_loss + refine_loss
-        
-        # UNet training logic
-        else:
-            x, y = batch["image"], batch["mask"]
-            y_pred = self.forward(x)
-            loss = self.criterion(y_pred, y)
+        x, y = batch["image"], batch["mask"]
+        y_pred = self.forward(x)
+        loss = self.criterion(y_pred, y)
 
         self.training_step_outputs.append(loss)
         return loss
@@ -63,15 +47,7 @@ class TrainingModule(LightningModule):
         self.val_step_outputs.clear()
     
     def predict_step(self, batch, batch_idx):
-        if self.point_refine:
-            N, C, H, W = batch['image'].shape
-            indices, coarse_masks, refined_points = self(batch['image'])
-            K = indices.shape[-1]
-            refined_masks = coarse_masks.view(N, -1).scatter_(1, indices, refined_points.view(N, K)).view(coarse_masks.shape)
-            enc_mask = encode_mask(refined_masks, self.threshold)
-
-        else:
-            enc_mask = encode_mask(self(batch['image']), self.threshold)
+        enc_mask = encode_mask(self(batch['image']), self.threshold)
         
         return {'id': batch['id'][0], 'annotation': enc_mask}
 
@@ -83,6 +59,8 @@ class PredictionWriter(BasePredictionWriter):
         ):
         super().__init__(write_interval)
         self.output_dir = output_dir
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
 
     def write_on_epoch_end(self, trainer, pl_module, predictions, batch_indices):
         pd.DataFrame(predictions).to_csv(os.path.join(self.output_dir, 'predictions.csv'))

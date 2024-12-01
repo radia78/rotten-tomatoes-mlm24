@@ -15,7 +15,7 @@ trainer:
   accumulate_grad_batches: 1
 model:
   net:
-    class_path: models.point_refine_unet.PointRefineUnet
+    class_path: models.stacked_unet.StackedUnet
     init_args:
       encoder_name: 'resnet34'
       encoder_weights: 'imagenet'
@@ -28,7 +28,6 @@ model:
       mode: 'binary'
       from_logits: true
   threshold: 0.9
-  point_refine: true
 data:
   class_path: TomatoLeafDataModule
   init_args: 
