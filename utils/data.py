@@ -108,7 +108,7 @@ class TomatoLeafDataset(BaseSegmentationDataset):
             # Return the ID and image only if it is testing
             img, _ = self.preprocess(img, None)
             sample = {
-                "id": self.to_tensor(image=img_id)['image'],
+                "id": img_id,
                 "image": self.to_tensor(image=img)['image']
             }
 

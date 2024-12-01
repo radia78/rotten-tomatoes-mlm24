@@ -63,7 +63,16 @@ class TrainingModule(LightningModule):
         self.val_step_outputs.clear()
     
     def predict_step(self, batch, batch_idx):
-        enc_mask = encode_mask(self(batch['image']), self.threshold)
+        if self.point_refine:
+            N, C, H, W = batch['image'].shape
+            indices, coarse_masks, refined_points = self(batch['image'])
+            K = indices.shape[-1]
+            refined_masks = coarse_masks.view(N, -1).scatter_(1, indices, refined_points.view(N, K)).view(coarse_masks.shape)
+            enc_mask = encode_mask(refined_masks, self.threshold)
+
+        else:
+            enc_mask = encode_mask(self(batch['image']), self.threshold)
+        
         return {'id': batch['id'][0], 'annotation': enc_mask}
 
 class PredictionWriter(BasePredictionWriter):
