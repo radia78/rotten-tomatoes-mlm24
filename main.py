@@ -10,33 +10,38 @@ from utils.tools import encode_mask
 from utils.data import TomatoLeafDataModule, RetinalVesselDataModule
 
 class TrainingModule(LightningModule):
-    def __init__(self,net: nn.Module, criterion: nn.Module, threshold: float=0.9, ssl_training: any=None):
+    def __init__(self,net: nn.Module, criterion: nn.Module, threshold: float, point_refine: bool):
         super().__init__()
         self.net = net
         self.criterion = criterion
         self.threshold = threshold
-        self.ssl_training = ssl_training
+        self.point_refine = point_refine
+        if point_refine:
+            self.refine_criterion = nn.BCEWithLogitsLoss()
         self.training_step_outputs = []
         self.val_step_outputs = []
 
-    def forward(self, x, ssl_training=None):
-        if ssl_training is not None:
-            return self.net(x, ssl_training)
-        else:
-            return self.net(x)
+    def forward(self, x):
+        return self.net(x)
     
     def training_step(self, batch, batch_idx):
-        # SSL training logic
-        if self.ssl_training:
-            x = batch["image"]
-            z1, z2 = self.forward(x, self.ssl_training)
-            loss = self.criterion(z1, z2)
+        # point refinement logic
+        if self.point_refine:
+            x, y = batch["image"], batch['mask']
+            N = x.shape[0]
+            idx, coarse_masks, refined_points = self.forward(x)
+            K = idx.shape[-1]
+            coarse_loss = self.criterion(coarse_masks, y)
+            refine_targets = y.view(N, -1)[torch.arange(N).unsqueeze(1), idx].view(N, K)
+            refine_loss = self.refine_criterion(refined_points.view(N, K), refine_targets.float())
+            loss = coarse_loss + refine_loss
         
         # UNet training logic
         else:
             x, y = batch["image"], batch["mask"]
-            y_pred = self.forward(x, self.ssl_training)
+            y_pred = self.forward(x)
             loss = self.criterion(y_pred, y)
+
         self.training_step_outputs.append(loss)
         return loss
     
