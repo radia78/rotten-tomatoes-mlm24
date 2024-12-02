@@ -10,7 +10,7 @@ from utils.tools import encode_mask
 from utils.data import TomatoLeafDataModule, RetinalVesselDataModule
 
 class TrainingModule(LightningModule):
-    def __init__(self,net: nn.Module, criterion: nn.Module, threshold: float):
+    def __init__(self,net: nn.Module, criterion: nn.Module, threshold: float=0.9):
         super().__init__()
         self.net = net
         self.criterion = criterion
