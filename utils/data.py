@@ -10,7 +10,7 @@ from albumentations import (
     Normalize,
     Resize,
     ColorJitter,
-    GaussNoise,
+    CoarseDropout,
     Rotate,
     VerticalFlip,
     HorizontalFlip
@@ -155,7 +155,15 @@ class BaseSegmentationDataModule(L.LightningDataModule):
         self.num_workers = num_workers
         image_transforms = Compose([
             ColorJitter(p=0.7),
-            GaussNoise(p=0.7),
+            CoarseDropout(
+                max_holes=10,
+                min_holes=5,
+                max_height=256,
+                min_height=128,
+                max_width=256,
+                min_width=128,
+                p=0.7
+            ),
         ])
 
         geometric_transforms = Compose([

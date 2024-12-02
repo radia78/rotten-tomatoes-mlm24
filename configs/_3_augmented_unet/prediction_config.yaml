@@ -4,7 +4,7 @@ trainer:
   callbacks:
     class_path: PredictionWriter
     init_args:
-      output_dir: 'predictions/_3_augmented_unet_predictions'
+      output_dir: 'predictions/_3_augmented_unet'
   logger: false
   accelerator: 'cuda'
   enable_progress_bar: true
@@ -15,10 +15,9 @@ model:
     class_path: segmentation_models_pytorch.Unet
     init_args:
       encoder_name: 'resnet34'
-      encoder_weights: null
+      encoder_weights: 'imagenet'
       in_channels: 3
       decoder_use_batchnorm: true
-      decoder_attention_type: 'scse'
       classes: 1
   criterion:
     class_path: segmentation_models_pytorch.losses.JaccardLoss

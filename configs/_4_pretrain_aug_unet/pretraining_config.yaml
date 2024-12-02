@@ -19,10 +19,9 @@ model:
     class_path: models.augmented_unet.AugmentedUnet
     init_args:
       encoder_name: 'resnet34'
-      encoder_weights: null
+      encoder_weights: 'imagenet'
       in_channels: 3
       decoder_use_batchnorm: true
-      decoder_attention_type: 'scse'
       classes: 1
   criterion:
     class_path: segmentation_models_pytorch.losses.JaccardLoss
@@ -37,9 +36,8 @@ data:
     num_workers: 2
 optimizer: AdamW
 lr_scheduler:
-  class_path: torch.optim.lr_scheduler.CosineAnnealingWarmRestarts
+  class_path: torch.optim.lr_scheduler.CosineAnnealingLR
   init_args:
-    T_0: 10
-    T_mult: 2
-    eta_min: 1e-5
+    T_max: 25
+    eta_min: 2e-4
 ckpt_path: null

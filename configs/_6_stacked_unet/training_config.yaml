@@ -1,7 +1,7 @@
 # lightning.pytorch==2.4.0
 seed_everything: true
 trainer:
-  accelerator: 'mps'
+  accelerator: 'cuda'
   logger: 
     class_path: lightning.pytorch.loggers.CSVLogger
     init_args:
