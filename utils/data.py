@@ -10,8 +10,9 @@ from albumentations import (
     Normalize,
     Resize,
     ColorJitter,
-    CoarseDropout,
-    GaussNoise,
+    Solarize,
+    ToGray,
+    GaussianBlur,
     Rotate,
     VerticalFlip,
     HorizontalFlip
@@ -156,16 +157,9 @@ class BaseSegmentationDataModule(L.LightningDataModule):
         self.num_workers = num_workers
         image_transforms = Compose([
             ColorJitter(p=0.7),
-            GaussNoise(p=1, var_limit=(5, 10)),
-            CoarseDropout(
-                max_holes=10,
-                min_holes=5,
-                max_height=256,
-                min_height=128,
-                max_width=256,
-                min_width=128,
-                p=0.7
-            ),
+            ToGray(p=0.5),
+            GaussianBlur((55, 75), p=0.7),
+            Solarize(p=0.7)
         ])
 
         geometric_transforms = Compose([
@@ -226,7 +220,7 @@ class TomatoLeafDataModule(BaseSegmentationDataModule):
     
     def predict_dataloader(self):
         return DataLoader(
-            dataset=self.tomato_predict,
+            dataset=self.tomato_predict, 
             batch_size=1,
             shuffle=False,
             persistent_workers=True,
