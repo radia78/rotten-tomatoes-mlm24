@@ -11,6 +11,7 @@ from albumentations import (
     Resize,
     ColorJitter,
     CoarseDropout,
+    GaussNoise,
     Rotate,
     VerticalFlip,
     HorizontalFlip
@@ -155,6 +156,7 @@ class BaseSegmentationDataModule(L.LightningDataModule):
         self.num_workers = num_workers
         image_transforms = Compose([
             ColorJitter(p=0.7),
+            GaussNoise(p=1, var_limit=(5, 10)),
             CoarseDropout(
                 max_holes=10,
                 min_holes=5,
