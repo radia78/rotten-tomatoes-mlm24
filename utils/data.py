@@ -11,9 +11,7 @@ from albumentations import (
     Resize,
     CoarseDropout,
     GaussNoise,
-    Rotate,
-    VerticalFlip,
-    HorizontalFlip
+    Affine,
 )
 from albumentations.pytorch.transforms import ToTensorV2
 import lightning as L
@@ -92,16 +90,13 @@ class TomatoLeafDataset(BaseSegmentationDataset):
             # Apply the transformation
             if self.transforms is not None:
                 # Geometric transformations
-                augmented = self.transforms["geometric"](image=img, mask=mask)
-                
-                # Image based transformations
-                img = self.transforms["image"](image=augmented['image'])
+                augmented = self.transforms(image=img, mask=mask)
 
             # Return the ID, image, and mask if it is training
             sample = {
                 "id": img_id,
-                "image": self.to_tensor(image=img['image'])['image'], 
-                "mask": self.to_tensor(image=augmented['mask'])['image']
+                "image": augmented['image'], 
+                "mask": augmented['mask']
             }
 
         else:
@@ -139,13 +134,12 @@ class RetinalVesselDataset(BaseSegmentationDataset):
         img, mask = self.preprocess(img, mask)
 
         if self.transforms is not None:
-            augmented = self.transforms['geometric'](image=img, mask=mask)
-            img = self.transforms['image'](image=augmented['image'])
+            augmented = self.transforms(image=img, mask=mask)
 
-            return {'image': self.to_tensor(image=img['image'])['image'], 'mask': self.to_tensor(image=augmented['mask'])['image']}
+            return {'image': augmented['image'], 'mask': augmented['mask']}
         
         else:
-            return {'image':  self.to_tensor(image=img)['image'], 'mask': self.to_tensor(image=mask)['image']}
+            return {'image':  self.to_tensor(image=img), 'mask': self.to_tensor(image=mask)['image']}
         
 class BaseSegmentationDataModule(L.LightningDataModule):
     def __init__(self, data_dir: str, batch_size: int, num_workers: int):
@@ -153,29 +147,18 @@ class BaseSegmentationDataModule(L.LightningDataModule):
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
-        image_transforms = Compose([
-            GaussNoise(var_limit=(5, 10), p=0.0),
-            CoarseDropout(
-                max_holes=10_000,
-                min_holes=5_000,
-                max_height=16,
-                min_height=4,
-                max_width=16,
-                min_width=8,
-                p=0.0
-            )
-        ])
 
-        geometric_transforms = Compose([
-            Rotate(limit=(-360, 360), p=0.7),
-            HorizontalFlip(p=0.7),
-            VerticalFlip(p=0.7)
-            
+        self.transforms = Compose([
+            Affine(
+                scale=(1.0, 1.5),
+                keep_ratio=True,
+                translate_percent=(0.0, 0.5),
+                rotate=(-360, 360),
+                shear=(-45, 45),
+                p=0.7
+            ),
+            ToTensorV2()
         ])
-        self.transforms = {
-            "geometric": geometric_transforms,
-            "image": image_transforms
-        }
         
 class RetinalVesselDataModule(BaseSegmentationDataModule):
     def setup(self, stage: str=None):
@@ -194,7 +177,7 @@ class RetinalVesselDataModule(BaseSegmentationDataModule):
         return DataLoader(
             self.val_data,
             batch_size=self.batch_size,
-            shuffle=False,
+            shuffle=True,
             num_workers=self.num_workers,
             persistent_workers=True
         )
@@ -218,7 +201,7 @@ class TomatoLeafDataModule(BaseSegmentationDataModule):
             dataset=self.tomato_train,
             batch_size=self.batch_size,
             shuffle=True,
-            persistent_workers=True,
+            persistent_workers=False,
             num_workers=self.num_workers
         )
     
