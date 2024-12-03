@@ -18,6 +18,7 @@ model:
       encoder_weights: 'imagenet'
       in_channels: 3
       decoder_use_batchnorm: true
+      decoder_attention_type: 'se'
       classes: 1
   criterion:
     class_path: segmentation_models_pytorch.losses.JaccardLoss

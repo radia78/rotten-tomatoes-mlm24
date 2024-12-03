@@ -21,6 +21,7 @@ model:
       encoder_weights: 'imagenet'
       in_channels: 3
       decoder_use_batchnorm: true
+      decoder_attention_type: 'se'
       classes: 1
   criterion:
     class_path: segmentation_models_pytorch.losses.JaccardLoss
@@ -37,6 +38,6 @@ optimizer: AdamW
 lr_scheduler:
   class_path: torch.optim.lr_scheduler.CosineAnnealingLR
   init_args:
-    T_max: 25
+    T_max: 100
     eta_min: 2e-4
 ckpt_path: null

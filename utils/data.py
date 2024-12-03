@@ -154,15 +154,15 @@ class BaseSegmentationDataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         image_transforms = Compose([
-            GaussNoise(var_limit=(10, 50), p=0.7),
+            GaussNoise(var_limit=(5, 10), p=0.0),
             CoarseDropout(
-                max_holes=5_000,
-                min_holes=1_000,
+                max_holes=10_000,
+                min_holes=5_000,
                 max_height=16,
                 min_height=4,
                 max_width=16,
                 min_width=8,
-                p=0.7
+                p=0.0
             )
         ])
 
