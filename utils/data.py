@@ -184,11 +184,13 @@ class RetinalVesselDataModule(BaseSegmentationDataModule):
 
 class TomatoLeafDataModule(BaseSegmentationDataModule):
     def setup(self, stage: str=None):
-        self.tomato_train = TomatoLeafDataset(
+        self.full_data = TomatoLeafDataset(
             root=self.data_dir,
             split="train",
             transforms=self.transforms
         )
+
+        self.tomato_train, self.tomato_val = random_split(self.full_data, [0.7, 0.3])
 
         self.tomato_predict = TomatoLeafDataset(
             root=self.data_dir,
@@ -202,6 +204,15 @@ class TomatoLeafDataModule(BaseSegmentationDataModule):
             batch_size=self.batch_size,
             shuffle=True,
             persistent_workers=False,
+            num_workers=self.num_workers
+        )
+    
+    def val_dataloader(self):
+        return DataLoader(
+            dataset=self.tomato_val,
+            batch_size=1,
+            shuffle=True,
+            persistent_workers=True,
             num_workers=self.num_workers
         )
     

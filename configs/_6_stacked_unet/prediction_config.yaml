@@ -4,21 +4,21 @@ trainer:
   callbacks:
     class_path: PredictionWriter
     init_args:
-      output_dir: '_5_point_refine_unet_training_logs'
+      output_dir: 'predictions/_6_stacked_unet'
   logger: false
-  accelerator: 'mps'
+  accelerator: 'cuda'
   enable_progress_bar: true
   enable_model_summary: true
   inference_mode: true
 model:
   net:
-    class_path: models.point_refine_unet.PointRefineUnet
+    class_path: models.stacked_unet.StackedUnet
     init_args:
-      encoder_name: 'resnet34'
+      encoder_name: 'efficientnet-b4'
       encoder_weights: 'imagenet'
       in_channels: 3
       decoder_use_batchnorm: true
-      decoder_attention_type: 'se'
+      decoder_attention_type: 'scse'
       classes: 1
   criterion:
     class_path: segmentation_models_pytorch.losses.JaccardLoss
