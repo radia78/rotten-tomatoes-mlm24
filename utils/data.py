@@ -30,38 +30,39 @@ def rl_decode(enc, shape=(IMAGE_HEIGHT, IMAGE_WIDTH)):
     return np.array(dec, dtype=np.uint8).reshape(shape)
 
 class BaseSegmentationDataset(Dataset):
-    def __init__(self, img_height: int, img_width: int, transforms=None):
+    def __init__(self, img_height: int, img_width: int, scale: int=1, transforms=None):
         # Preprocess tranforms
-        self.preprocess_img = Compose([
+        self.postprocess_img = Compose([
             Resize(
-                self.transform_image_size(img_height, 32), 
-                self.transform_image_size(img_width, 32),
+                self.transform_image_size(img_height, 32) // scale, 
+                self.transform_image_size(img_width, 32) // scale,
                 interpolation=cv2.INTER_CUBIC
             ),
-            Normalize()
+            Normalize(),
+            ToTensorV2()
         ])
 
-        self.preprocess_mask = Compose([
+        self.postprocess_mask = Compose([
             Resize(
                 self.transform_image_size(img_height, 32), 
                 self.transform_image_size(img_width, 32),
                 interpolation=cv2.INTER_NEAREST_EXACT
-            )
+            ),
+            ToTensorV2()
         ])
 
         # Additional transforms
         self.transforms = transforms
-        self.to_tensor = ToTensorV2()
 
     def transform_image_size(self, size, scale):
         return math.ceil(size/scale) * scale
     
-    def preprocess(self, image, mask):
-        return self.preprocess_img(image=image)['image'], self.preprocess_mask(image=mask)['image'] if mask is not None else None
+    def postprocess(self, image, mask):
+        return self.postprocess_img(image=image)['image'], self.postprocess_mask(image=mask)['image'] if mask is not None else None
 
 class TomatoLeafDataset(BaseSegmentationDataset):
-    def __init__(self, root: str, split: str="train", img_height: int=1400, img_width: int=875, transforms=None):
-        super().__init__(img_height, img_width, transforms)
+    def __init__(self, root: str, split: str="train", img_height: int=1400, img_width: int=875, scale: int=1, transforms=None):
+        super().__init__(img_height, img_width, scale, transforms)
         # Create the directories and open the csv-files
         self.csv_file = f"{root}/{split}.csv"
         self.encodings = pd.read_csv(self.csv_file)
@@ -84,27 +85,26 @@ class TomatoLeafDataset(BaseSegmentationDataset):
         # If it is a test split
         if self.split == "train":
             mask = rl_decode(self.encodings.iloc[idx, 1])
-            # Apply preprocess transformation
-            img, mask = self.preprocess(img, mask)
 
             # Apply the transformation
             if self.transforms is not None:
                 # Geometric transformations
                 augmented = self.transforms(image=img, mask=mask)
+                final_img, final_mask = self.postprocess(image=augmented['image'], mask=augmented['mask'])
 
             # Return the ID, image, and mask if it is training
             sample = {
                 "id": img_id,
-                "image": augmented['image'], 
-                "mask": augmented['mask']
+                "image": final_img, 
+                "mask": final_mask
             }
 
         else:
+            final_img, _ = self.postprocess(image=img, mask=None)
             # Return the ID and image only if it is testing
-            img, _ = self.preprocess(img, None)
             sample = {
                 "id": img_id,
-                "image": self.to_tensor(image=img)['image']
+                "image": final_img 
             }
 
         try:
@@ -115,6 +115,7 @@ class TomatoLeafDataset(BaseSegmentationDataset):
         except AssertionError as msg:
             print(msg)
 
+@DeprecationWarning
 class RetinalVesselDataset(BaseSegmentationDataset):
     def __init__ (self, root: str, img_height: int=960, img_width: int=999, transforms: any=None):
         super().__init__(img_height, img_width, transforms)
@@ -142,10 +143,11 @@ class RetinalVesselDataset(BaseSegmentationDataset):
             return {'image':  self.to_tensor(image=img), 'mask': self.to_tensor(image=mask)['image']}
         
 class BaseSegmentationDataModule(L.LightningDataModule):
-    def __init__(self, data_dir: str, batch_size: int, num_workers: int):
+    def __init__(self, data_dir: str, batch_size: int, num_workers: int, scale=1):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
+        self.scale = scale
         self.num_workers = num_workers
 
         self.transforms = Compose([
@@ -157,9 +159,9 @@ class BaseSegmentationDataModule(L.LightningDataModule):
                 shear=(-45, 45),
                 p=0.7
             ),
-            ToTensorV2()
         ])
-        
+
+@DeprecationWarning 
 class RetinalVesselDataModule(BaseSegmentationDataModule):
     def setup(self, stage: str=None):
         self.full_dataset = RetinalVesselDataset(root=self.data_dir, transforms=self.transforms)
@@ -187,6 +189,7 @@ class TomatoLeafDataModule(BaseSegmentationDataModule):
         self.full_data = TomatoLeafDataset(
             root=self.data_dir,
             split="train",
+            scale=self.scale,
             transforms=self.transforms
         )
 
@@ -195,6 +198,7 @@ class TomatoLeafDataModule(BaseSegmentationDataModule):
         self.tomato_predict = TomatoLeafDataset(
             root=self.data_dir,
             split="test",
+            scale=self.scale,
             transforms=None
         )
 
