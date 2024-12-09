@@ -1,11 +1,14 @@
 import matplotlib.pyplot as plt
 from torchvision.transforms.v2 import Resize, InterpolationMode
+from kornia.morphology import closing
 from utils.data import IMAGE_HEIGHT, IMAGE_WIDTH, rl_decode
 import torch
 import os
 import pandas as pd
 from PIL import Image
 import numpy as np
+
+closing_kernel = torch.ones(3, 3)
 
 def display_image_and_mask(image, mask, imgname, save_dir='test_img_results', figsize=(10, 6)):
     plt.figure(figsize=figsize)
@@ -49,7 +52,7 @@ def encode_mask(mask: torch.Tensor, threshold: float):
     mask = resize_mask(mask)
 
     # Apply transformations
-    mask = (mask.sigmoid() > threshold).long().flatten().tolist()
+    mask = closing((mask.sigmoid() > threshold).long(), closing_kernel).flatten().tolist()
 
     return run_length_encode(mask)
 
