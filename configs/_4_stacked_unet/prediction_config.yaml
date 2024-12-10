@@ -4,7 +4,7 @@ trainer:
   callbacks:
     class_path: PredictionWriter
     init_args:
-      output_dir: 'predictions/_5_stacked_unet'
+      output_dir: 'predictions/_4_stacked_unet'
   logger: false
   accelerator: 'cuda'
   enable_progress_bar: true

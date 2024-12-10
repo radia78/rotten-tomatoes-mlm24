@@ -4,7 +4,7 @@ trainer:
   callbacks:
     class_path: PredictionWriter
     init_args:
-      output_dir: 'predictions/_3_augmented_unet'
+      output_dir: 'predictions/_2_sa_unet'
   logger: false
   accelerator: 'cuda'
   enable_progress_bar: true
@@ -12,7 +12,7 @@ trainer:
   inference_mode: true
 model:
   net:
-    class_path: models.augmented_unet.AugmentedUnet
+    class_path: models.sa_unet.SAUnet
     init_args:
       encoder_name: 'resnet34'
       encoder_weights: 'imagenet'

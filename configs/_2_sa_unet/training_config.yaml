@@ -5,18 +5,17 @@ trainer:
   logger: 
     class_path: lightning.pytorch.loggers.CSVLogger
     init_args:
-      save_dir: '_6_stacked_unet_training_logs'
+      save_dir: '_2_sa_unet'
       flush_logs_every_n_steps: 17
   max_epochs: 100
   log_every_n_steps: 25
-  check_val_every_n_epoch: 20
   enable_checkpointing: true
   enable_progress_bar: true
   enable_model_summary: true
-  accumulate_grad_batches: 2
+  accumulate_grad_batches: 1
 model:
   net:
-    class_path: models.stacked_unet.StackedUnet
+    class_path: models.sa_unet.SAUnet
     init_args:
       encoder_name: 'resnet34'
       encoder_weights: 'imagenet'
@@ -29,13 +28,11 @@ model:
     init_args:
       mode: 'binary'
       from_logits: true
-  threshold: 0.9
 data:
   class_path: TomatoLeafDataModule
   init_args: 
     data_dir: data/leaf_veins
-    batch_size: 2
-    scale: 4
+    batch_size: 4
     num_workers: 2
 optimizer: AdamW
 lr_scheduler:

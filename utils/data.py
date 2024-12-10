@@ -36,7 +36,6 @@ class BaseSegmentationDataset(Dataset):
                 self.transform_image_size(img_width, 32) // scale,
                 interpolation=cv2.INTER_CUBIC
             ),
-            Normalize(),
             ToTensorV2()
         ])
 
