@@ -16,8 +16,7 @@ class StackedUnet(nn.Module):
             in_channels: int = 3,
             classes: int = 1,
             activation: Optional[Union[str, callable]] = None,
-            aux_params: any=None,
-            **kwargs: dict[str, Any]
+            aux_params: any=None
         ):
         super().__init__()
         self.enhancer = Unet(

@@ -7,7 +7,6 @@ import cv2
 from torch.utils.data import Dataset, DataLoader, random_split
 from albumentations import (
     Compose,
-    Normalize,
     Resize,
     Affine,
 )
@@ -92,8 +91,8 @@ class TomatoLeafDataset(BaseSegmentationDataset):
             # Return the ID, image, and mask if it is training
             sample = {
                 "id": img_id,
-                "image": final_img, 
-                "mask": final_mask
+                "image": final_img.float(), 
+                "mask": final_mask.long()
             }
 
         else:
@@ -101,8 +100,63 @@ class TomatoLeafDataset(BaseSegmentationDataset):
             # Return the ID and image only if it is testing
             sample = {
                 "id": img_id,
-                "image": final_img 
+                "image": final_img.float() 
             }
+
+        try:
+            assert sample['image'].shape[1] % 32 == 0 and sample['image'].shape[2] % 32 == 0, "Image size must be divisible by 32"
+            sample['id'] = self.encodings.iloc[idx, 0]
+            return sample
+        
+        except AssertionError as msg:
+            print(msg)
+
+class SLDataset(BaseSegmentationDataset):
+    def __init__(self, root: str, img_height: int=1400, img_width: int=875, scale: int=1, transforms=None):
+        super().__init__(img_height, img_width, scale, transforms)
+        # Create the directories and open the csv-files
+        self.csv_file = f"{root}/train.csv"
+        self.preds_file = f"{root}/predictions.csv"
+        self.encodings = pd.read_csv(self.csv_file)
+        self.preds = pd.read_csv(self.preds_file)
+        self.image_dir = f"{root}/train"
+
+    def postprocess(self, image, mask, pseudo_mask):
+        return self.postprocess_img(image=image)['image'], self.postprocess_mask(image=mask)['image'], self.postprocess_mask(image=pseudo_mask)['image']
+
+    def __len__(self):
+        return len(self.encodings)
+
+    def __getitem__(self, idx):
+        idx = idx.tolist() if torch.is_tensor(idx) else idx
+        img_id = self.encodings.iloc[idx, 0]
+
+        # The find the image name
+        img_name = os.path.join(self.image_dir, img_id + ".jpg")
+
+        # Convert the image to a numpy array
+        final_img = cv2.imread(img_name, cv2.IMREAD_COLOR)
+
+        final_mask = rl_decode(self.encodings.iloc[idx, 1])
+        final_pseudo_mask = rl_decode(self.preds.iloc[idx, 1])
+
+        # Apply the transformation
+        if self.transforms is not None:
+            # Geometric transformations
+            augmented = self.transforms(image=final_img, mask=final_mask, pseudo_mask=final_pseudo_mask)
+            final_img, final_mask, final_pseudo_mask = self.postprocess(
+                image=augmented['image'], 
+                mask=augmented['mask'], 
+                pseudo_mask=augmented['pseudo_mask']
+            )
+
+        # Return the ID, image, and mask if it is training
+        sample = {
+            "id": img_id,
+            "image": final_img.float(), 
+            "mask": final_mask.long(),
+            "pseudo_mask": final_pseudo_mask.long()
+        }
 
         try:
             assert sample['image'].shape[1] % 32 == 0 and sample['image'].shape[2] % 32 == 0, "Image size must be divisible by 32"
