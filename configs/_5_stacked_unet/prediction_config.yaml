@@ -1,24 +1,20 @@
 # lightning.pytorch==2.4.0
 seed_everything: true
 trainer:
-  accelerator: 'cuda'
-  logger: 
-    class_path: lightning.pytorch.loggers.CSVLogger
+  callbacks:
+    class_path: PredictionWriter
     init_args:
-      save_dir: '_6_stacked_unet_training_logs'
-      flush_logs_every_n_steps: 17
-  max_epochs: 100
-  log_every_n_steps: 25
-  check_val_every_n_epoch: 20
-  enable_checkpointing: true
+      output_dir: 'predictions/_5_stacked_unet'
+  logger: false
+  accelerator: 'cuda'
   enable_progress_bar: true
   enable_model_summary: true
-  accumulate_grad_batches: 4
+  inference_mode: true
 model:
   net:
     class_path: models.stacked_unet.StackedUnet
     init_args:
-      encoder_name: 'timm-efficientnet-b4'
+      encoder_name: 'resnet34'
       encoder_weights: 'imagenet'
       in_channels: 3
       decoder_use_batchnorm: true
@@ -30,17 +26,13 @@ model:
       mode: 'binary'
       from_logits: true
   threshold: 0.9
+  point_refine: true
 data:
   class_path: TomatoLeafDataModule
-  init_args: 
+  init_args:
     data_dir: data/leaf_veins
     batch_size: 1
     scale: 4
     num_workers: 2
-optimizer: AdamW
-lr_scheduler:
-  class_path: torch.optim.lr_scheduler.CosineAnnealingLR
-  init_args:
-    T_max: 100
-    eta_min: 2e-4
+return_predictions: false
 ckpt_path: null

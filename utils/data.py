@@ -9,8 +9,6 @@ from albumentations import (
     Compose,
     Normalize,
     Resize,
-    CoarseDropout,
-    GaussNoise,
     Affine,
 )
 from albumentations.pytorch.transforms import ToTensorV2
@@ -207,7 +205,7 @@ class TomatoLeafDataModule(BaseSegmentationDataModule):
             dataset=self.tomato_train,
             batch_size=self.batch_size,
             shuffle=True,
-            persistent_workers=False,
+            persistent_workers=True,
             num_workers=self.num_workers
         )
     
@@ -215,7 +213,7 @@ class TomatoLeafDataModule(BaseSegmentationDataModule):
         return DataLoader(
             dataset=self.tomato_val,
             batch_size=1,
-            shuffle=True,
+            shuffle=False,
             persistent_workers=True,
             num_workers=self.num_workers
         )

@@ -32,7 +32,7 @@ data:
   class_path: TomatoLeafDataModule
   init_args: 
     data_dir: data/leaf_veins
-    batch_size: 1
+    batch_size: 4
     num_workers: 2
 optimizer: AdamW
 lr_scheduler:
