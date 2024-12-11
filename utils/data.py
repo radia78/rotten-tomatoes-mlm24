@@ -4,7 +4,7 @@ import torch
 import math
 import numpy as np
 import cv2
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader, random_split, Subset
 from albumentations import (
     Compose,
     Resize,
@@ -194,12 +194,13 @@ class RetinalVesselDataset(BaseSegmentationDataset):
             return {'image':  self.to_tensor(image=img), 'mask': self.to_tensor(image=mask)['image']}
         
 class BaseSegmentationDataModule(L.LightningDataModule):
-    def __init__(self, data_dir: str, batch_size: int, num_workers: int, scale=1):
+    def __init__(self, data_dir: str, batch_size: int, num_workers: int, scale=1, sdl: bool=False):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.scale = scale
         self.num_workers = num_workers
+        self.sdl = sdl
 
         self.transforms = Compose([
             Affine(
@@ -244,7 +245,14 @@ class TomatoLeafDataModule(BaseSegmentationDataModule):
             transforms=self.transforms
         )
 
-        self.tomato_train, self.tomato_val = random_split(self.full_data, [0.7, 0.3])
+        if self.sdl:
+            indices = [i for i in range(len(self.full_data))]
+            idx_1 = indices[:len(self.full_data)]
+            idx_2 = indices[len(self.full_data):]
+            self.tomato_train, self.tomato_val = Subset(self.full_data, idx_1), Subset(self.full_data, idx_2)
+
+        else:   
+            self.tomato_train, self.tomato_val = random_split(self.full_data, [0.7, 0.3])
 
         self.tomato_predict = TomatoLeafDataset(
             root=self.data_dir,
@@ -278,4 +286,20 @@ class TomatoLeafDataModule(BaseSegmentationDataModule):
             shuffle=False,
             persistent_workers=True,
             num_workers=self.num_workers
+        )
+    
+class SLDDataModule(BaseSegmentationDataModule):
+    def setup(self, stage: str=None):
+        self.sld_data = SLDataset(
+            root=self.data_dir,
+            transforms=self.transforms
+        )
+
+    def train_dataloader(self):
+        return DataLoader(
+            dataset=self.data,
+            batch_size=self.batch_size,
+            shuffle=True,
+            persistent_workers=True,
+            num_workers=True
         )

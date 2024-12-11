@@ -8,7 +8,7 @@ import pandas as pd
 from PIL import Image
 import numpy as np
 
-kernel = torch.ones(3, 3)
+kernel = torch.ones(9, 9)
 
 def display_image_and_mask(image, mask, imgname, save_dir='test_img_results', figsize=(10, 6)):
     plt.figure(figsize=figsize)

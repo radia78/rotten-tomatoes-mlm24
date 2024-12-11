@@ -16,7 +16,7 @@ class StackedUnet(nn.Module):
             in_channels: int = 3,
             classes: int = 1,
             activation: Optional[Union[str, callable]] = None,
-            aux_params: any=None
+            aux_params: any={'dropout': 0.5}
         ):
         super().__init__()
         self.enhancer = Unet(
@@ -27,7 +27,7 @@ class StackedUnet(nn.Module):
             decoder_channels=decoder_channels,
             decoder_attention_type=decoder_attention_type,
             in_channels=in_channels,
-            classes=3,
+            classes=in_channels,
             activation=activation,
             aux_params=aux_params
         )
@@ -46,7 +46,7 @@ class StackedUnet(nn.Module):
         )
 
     def forward(self, x):
-        enhanced_img = self.enhancer(x)
+        enhanced_img = self.enhancer(x) + x
         mask = self.segmenter(enhanced_img)
 
         return mask

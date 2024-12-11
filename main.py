@@ -10,21 +10,28 @@ from utils.tools import encode_mask
 from utils.data import TomatoLeafDataModule, RetinalVesselDataModule
 
 class TrainingModule(LightningModule):
-    def __init__(self,net: nn.Module, criterion: nn.Module, threshold: float=0.9):
+    def __init__(self,net: nn.Module, criterion: nn.Module, threshold: float=0.9, SDL: bool=False):
         super().__init__()
         self.net = net
         self.criterion = criterion
         self.threshold = threshold
         self.training_step_outputs = []
         self.val_step_outputs = []
+        self.sdl = SDL
 
     def forward(self, x):
         return self.net(x)
     
     def training_step(self, batch, batch_idx):
-        x, y = batch["image"], batch["mask"]
-        y_pred = self.forward(x)
-        loss = self.criterion(y_pred, y)
+        if self.sdl:
+            x, y, y_hat = batch['image'], batch['mask'], batch['pseudo_mask']
+            y_pred = self.forward(x)
+            loss = self.criterion(y_pred, y_hat) + self.criterion(y_pred, y)
+
+        else:
+            x, y = batch["image"], batch["mask"]
+            y_pred = self.forward(x)
+            loss = self.criterion(y_pred, y)
 
         self.training_step_outputs.append(loss)
         return loss
