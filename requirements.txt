@@ -6,4 +6,3 @@ tensorboard
 lightning
 jsonargparse[signatures]
 kornia
-opencv-python
