@@ -4,18 +4,18 @@ trainer:
   callbacks:
     class_path: PredictionWriter
     init_args:
-      output_dir: 'predictions'
+      output_dir: 'predictions/_3_augmented_unet'
   logger: false
-  accelerator: 'mps'
+  accelerator: 'cuda'
   enable_progress_bar: true
   enable_model_summary: true
   inference_mode: true
 model:
   net:
-    class_path: segmentation_models_pytorch.Unet
+    class_path: models.augmented_unet.AugmentedUnet
     init_args:
       encoder_name: 'resnet34'
-      encoder_weights: null
+      encoder_weights: 'imagenet'
       in_channels: 3
       decoder_use_batchnorm: true
       decoder_attention_type: 'scse'
@@ -26,8 +26,10 @@ model:
       mode: 'binary'
       from_logits: true
 data:
-  data_dir: data/leaf_veins/
-  batch_size: 1
-  num_workers: 4
+  class_path: TomatoLeafDataModule
+  init_args:
+    data_dir: data/leaf_veins
+    batch_size: 1
+    num_workers: 2
 return_predictions: false
-ckpt_path: "lightning_logs/lightning_logs/version_2/checkpoints/epoch=2-step=9.ckpt"
+ckpt_path: null

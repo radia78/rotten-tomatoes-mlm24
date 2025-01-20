@@ -1,0 +1,35 @@
+# lightning.pytorch==2.4.0
+seed_everything: true
+trainer:
+  accelerator: 'mps'
+  logger: 
+    class_path: lightning.pytorch.loggers.CSVLogger
+    init_args:
+      save_dir: '_5_recurrent_refiner_training_logs'
+      flush_logs_every_n_steps: 17
+  max_epochs: 200
+  log_every_n_steps: 25
+  check_val_every_n_epoch: 20
+  enable_checkpointing: true
+  enable_progress_bar: true
+  enable_model_summary: true
+  accumulate_grad_batches: 1
+model:
+  net:
+    class_path: models.RRUnet
+    init_args:
+      encoder_name: 'mit_b0'
+      encoder_weights: 'imagenet'
+      in_channels: 3
+      decoder_use_batchnorm: true
+      decoder_attention_type: 'scse'
+      classes: 1
+  threshold: 0.9
+data:
+  class_path: TomatoLeafDataModule
+  init_args: 
+    data_dir: data/leaf_veins
+    batch_size: 4
+    num_workers: 4
+optimizer: Adam
+ckpt_path: null
