@@ -6,12 +6,13 @@ The project is an extension of the [Plant Pathology Image Processor](https://dsi
 - [Conclusion](https://github.com/radia78/rotten-tomatoes-mlm24/blob/main/README.md#conclusion)
   
 ## Methods
-Our team modified the U-Net architecture by appending a smaller U-Net that takes the base segmentation logits and outputs a "refined" segmentation logit. The final prediction of the model concatenated model is "refined" added with the "unrefined" logits. In addition, we used a ResNET34 backbone pretrained on the Imagenet dataset. We trained our model using the AdamW optimizer with a Cosine schedule.
+Our team modified the U-Net architecture by appending a smaller U-Net that takes the base segmentation logits and outputs a "refined" segmentation logit. The final prediction of the model concatenated model is "refined" added with the "unrefined" logits. In addition, we used a ResNET34 backbone pretrained on the Imagenet dataset. We trained our model using the AdamW optimizer with a Cosine Annealing schedule.
 
 ## Results
 Our model did best lol.
 
 ## Conclusion
-We need to try a barlows twin method, refinement through diffusion, and finally recurrent refinement.
+From our experiments, we believe that components and modules that captures fine-grained details/dependencies of the image only marginally improves its segmentation capability. Instead, our experiments show that refining/improving the segmentation is the key to improve the performance of our model. In the future, we would like to explore methods/models that can enhance/refine the segmentation results.
 
 ## References
+*Insert references*
